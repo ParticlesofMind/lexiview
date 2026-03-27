@@ -49,7 +49,7 @@ export interface SavedWord {
   entry: DictionaryEntry
 }
 
-export type AppView = 'dashboard' | 'reader' | 'wordbank' | 'quizbuilder'
+export type AppView = 'dashboard' | 'reader' | 'wordbank' | 'quizbuilder' | 'quizsession'
 
 export type QuizLanguage = 'German' | 'English' | 'French' | 'Italian' | 'Spanish'
 export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2'
@@ -88,6 +88,25 @@ export interface QuizQuestion {
 export interface GeneratedQuiz {
   title: string
   questions: QuizQuestion[]
+}
+
+export interface SessionParticipant {
+  id: string
+  nickname: string
+  score: number
+}
+
+export type QuizSessionStatus = 'lobby' | 'question' | 'reveal' | 'leaderboard' | 'finished'
+
+export interface QuizSession {
+  id: string
+  quizTitle: string
+  joinUrl: string
+  shortCode: string
+  status: QuizSessionStatus
+  currentQuestionIndex: number
+  questionStartedAt: string | null
+  participants: SessionParticipant[]
 }
 
 export interface UserProfile {

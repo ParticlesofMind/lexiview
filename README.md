@@ -13,18 +13,27 @@ The React Compiler is not enabled on this template because of its impact on dev 
 
 ## AI Quiz Generator Setup
 
-The Quiz Builder calls Anthropic directly and requires an API key.
+The Quiz Builder now calls Ollama directly.
 
 1. Create a `.env` file in the project root.
-2. Add the key below:
+2. Add the configuration below:
 
 ```bash
-VITE_ANTHROPIC_API_KEY=your_anthropic_key_here
+VITE_OLLAMA_BASE_URL=http://localhost:11434
+VITE_OLLAMA_MODEL=llama3.1:8b
+# Optional for hosted Ollama endpoints that require auth
+VITE_OLLAMA_API_KEY=your_ollama_key_here
 ```
+
+There is also a starter template in `.env.example`.
 
 3. Restart the dev server.
 
-If the key is missing or invalid, the generator now shows a clear error message in the UI.
+Notes:
+
+- If you are using local Ollama, the API key is usually not needed.
+- If you use a hosted Ollama endpoint, any `VITE_` key is exposed to the browser, so this is acceptable for local/dev use but should move server-side before production.
+- If the base URL, model, or auth is wrong, the generator shows a clear error message in the UI.
 
 ## Expanding the ESLint configuration
 

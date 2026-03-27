@@ -7,6 +7,7 @@ import { DashboardView } from './components/DashboardView'
 import { AuthGate } from './components/AuthGate'
 import { WordBankView } from './components/WordBankView'
 import { QuizBuilderView } from './components/QuizBuilderView'
+import { HostSessionView } from './components/HostSessionView'
 import { useAppStore } from './store/useAppStore'
 
 export default function App() {
@@ -49,6 +50,8 @@ export default function App() {
       {activeView === 'wordbank' && <WordBankView />}
 
       {activeView === 'quizbuilder' && <QuizBuilderView />}
+
+      {activeView === 'quizsession' && <HostSessionView />}
     </div>
   )
 }

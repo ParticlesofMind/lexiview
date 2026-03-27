@@ -5,13 +5,9 @@ import type {
   QuizQuestion,
 } from '../types/dictionary'
 
-type AnthropicContentBlock = {
-  type: string
-  text?: string
-}
-
-type AnthropicMessageResponse = {
-  content?: AnthropicContentBlock[]
+type OllamaGenerateResponse = {
+  response?: string
+  error?: string
 }
 
 const SYSTEM_PROMPT =
@@ -23,7 +19,7 @@ function getExpectedLabels(count: number): Array<'A' | 'B' | 'C' | 'D'> {
   return ['A', 'B', 'C', 'D']
 }
 
-function buildPrompt(config: QuizBuilderConfig): string {
+function buildPrompt(config: QuizBuilderConfig, extraInstruction?: string): string {
   return `Generate a quiz with the following configuration:
 
 - Language: ${config.language}
@@ -32,6 +28,10 @@ function buildPrompt(config: QuizBuilderConfig): string {
 - Number of questions: ${config.questionCount}
 - Options per question: ${config.optionsPerQuestion}
 - Quiz type: ${config.quizType}
+
+${extraInstruction ? `Extra instruction:
+- ${extraInstruction}
+` : ''}
 
 CEFR Level Guidelines:
 - A1: Extremely simple vocabulary, present tense only, concrete everyday topics, max 6 words per prompt
@@ -204,40 +204,74 @@ function validateQuizPayload(payload: unknown, config: QuizBuilderConfig): Gener
   }
 }
 
-async function requestAnthropic(config: QuizBuilderConfig, apiKey: string): Promise<string> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+export function getOllamaBaseUrl() {
+  return (import.meta.env.VITE_OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/$/, '')
+}
+
+export function getOllamaModel() {
+  return import.meta.env.VITE_OLLAMA_MODEL || 'llama3.1:8b'
+}
+
+export async function testOllamaConnection(): Promise<{ baseUrl: string; model: string; modelAvailable: boolean }> {
+  const baseUrl = getOllamaBaseUrl()
+  const model = getOllamaModel()
+  const apiKey = import.meta.env.VITE_OLLAMA_API_KEY as string | undefined
+
+  const response = await fetch(`${baseUrl}/api/tags`, {
+    method: 'GET',
+    headers: {
+      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+    },
+  })
+
+  if (!response.ok) {
+    const errorBody = await response.text()
+    throw new Error(`Could not reach Ollama at ${baseUrl} (${response.status}): ${errorBody}`)
+  }
+
+  const payload = (await response.json()) as {
+    models?: Array<{ name?: string; model?: string }>
+  }
+
+  const modelAvailable =
+    payload.models?.some((entry) => entry.name === model || entry.model === model) ?? false
+
+  return { baseUrl, model, modelAvailable }
+}
+
+async function requestOllama(config: QuizBuilderConfig, extraInstruction?: string): Promise<string> {
+  const apiKey = import.meta.env.VITE_OLLAMA_API_KEY as string | undefined
+  const response = await fetch(`${getOllamaBaseUrl()}/api/generate`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
+      model: getOllamaModel(),
       system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: 'user',
-          content: buildPrompt(config),
-        },
-      ],
+      prompt: buildPrompt(config, extraInstruction),
+      format: 'json',
+      stream: false,
     }),
   })
 
   if (!response.ok) {
     const errorBody = await response.text()
-    throw new Error(`Anthropic request failed (${response.status}): ${errorBody}`)
+    throw new Error(`Ollama request failed (${response.status}): ${errorBody}`)
   }
 
-  const payload = (await response.json()) as AnthropicMessageResponse
-  const textBlock = payload.content?.find((block) => block.type === 'text' && typeof block.text === 'string')
+  const payload = (await response.json()) as OllamaGenerateResponse
 
-  if (!textBlock?.text) {
-    throw new Error('Anthropic response did not include text content.')
+  if (payload.error) {
+    throw new Error(`Ollama returned an error: ${payload.error}`)
   }
 
-  return textBlock.text
+  if (!payload.response) {
+    throw new Error('Ollama response did not include generated text.')
+  }
+
+  return payload.response
 }
 
 function parseGeneratedQuiz(rawResponse: string, config: QuizBuilderConfig): GeneratedQuiz {
@@ -247,18 +281,12 @@ function parseGeneratedQuiz(rawResponse: string, config: QuizBuilderConfig): Gen
 }
 
 export async function generateQuiz(config: QuizBuilderConfig): Promise<GeneratedQuiz> {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-
-  if (!apiKey) {
-    throw new Error('Missing VITE_ANTHROPIC_API_KEY. Add it to your .env file and restart Vite.')
-  }
-
-  const firstRaw = await requestAnthropic(config, apiKey)
+  const firstRaw = await requestOllama(config)
 
   try {
     return parseGeneratedQuiz(firstRaw, config)
   } catch (firstParseError) {
-    const secondRaw = await requestAnthropic(config, apiKey)
+    const secondRaw = await requestOllama(config)
 
     try {
       return parseGeneratedQuiz(secondRaw, config)
@@ -266,5 +294,44 @@ export async function generateQuiz(config: QuizBuilderConfig): Promise<Generated
       const message = firstParseError instanceof Error ? firstParseError.message : 'Invalid quiz JSON.'
       throw new Error(`Could not parse quiz JSON after retry. ${message}`)
     }
+  }
+}
+
+export async function regenerateQuestion(
+  config: QuizBuilderConfig,
+  currentQuestion: QuizQuestion
+): Promise<QuizQuestion> {
+  const singleQuestionConfig: QuizBuilderConfig = {
+    ...config,
+    questionCount: 1,
+  }
+
+  const extraInstruction = `Replace this existing question with a fresh one on the same topic and level, but do not reuse its wording: ${currentQuestion.prompt}`
+  const firstRaw = await requestOllama(singleQuestionConfig, extraInstruction)
+
+  let quiz: GeneratedQuiz
+
+  try {
+    quiz = parseGeneratedQuiz(firstRaw, singleQuestionConfig)
+  } catch (firstParseError) {
+    const secondRaw = await requestOllama(singleQuestionConfig, extraInstruction)
+
+    try {
+      quiz = parseGeneratedQuiz(secondRaw, singleQuestionConfig)
+    } catch {
+      const message = firstParseError instanceof Error ? firstParseError.message : 'Invalid quiz JSON.'
+      throw new Error(`Could not parse replacement question after retry. ${message}`)
+    }
+  }
+
+  const [question] = quiz.questions
+
+  if (!question) {
+    throw new Error('Model did not return a replacement question.')
+  }
+
+  return {
+    ...question,
+    position: currentQuestion.position,
   }
 }

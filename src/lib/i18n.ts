@@ -93,6 +93,40 @@ type UiCopy = {
   translation: string
   fillInTheBlank: string
   errorDetection: string
+  generatedQuiz: string
+  regenerateAll: string
+  regenerate: string
+  addQuestion: string
+  launchSession: string
+  editQuestion: string
+  saveChanges: string
+  cancel: string
+  deleteQuestion: string
+  moveUp: string
+  moveDown: string
+  explanationLabel: string
+  correctAnswer: string
+  optionLabel: string
+  presenterView: string
+  lobby: string
+  startQuiz: string
+  nextQuestion: string
+  revealAnswer: string
+  showLeaderboard: string
+  finishQuiz: string
+  backToBuilder: string
+  participants: string
+  joinLink: string
+  sessionCode: string
+  answerTiles: string
+  questionLabel: string
+  noQuizGenerated: string
+  hostReady: string
+  localSessionNote: string
+  testOllama: string
+  testingOllama: string
+  ollamaReachable: string
+  ollamaModelMissing: string
 }
 
 const COPY: Record<UiLanguage, UiCopy> = {
@@ -187,6 +221,40 @@ const COPY: Record<UiLanguage, UiCopy> = {
     translation: 'Translation',
     fillInTheBlank: 'Fill in the blank',
     errorDetection: 'Error detection',
+    generatedQuiz: 'Generated quiz',
+    regenerateAll: 'Regenerate All',
+    regenerate: 'Regenerate',
+    addQuestion: 'Add Blank Question',
+    launchSession: 'Launch Session ->',
+    editQuestion: 'Edit question',
+    saveChanges: 'Save changes',
+    cancel: 'Cancel',
+    deleteQuestion: 'Delete',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    explanationLabel: 'Explanation',
+    correctAnswer: 'Correct answer',
+    optionLabel: 'Option',
+    presenterView: 'Presenter View',
+    lobby: 'Lobby',
+    startQuiz: 'Start Quiz ->',
+    nextQuestion: 'Next ->',
+    revealAnswer: 'Reveal Answer',
+    showLeaderboard: 'Leaderboard',
+    finishQuiz: 'Finish Quiz',
+    backToBuilder: 'Back to Builder',
+    participants: 'Participants',
+    joinLink: 'Join link',
+    sessionCode: 'Session code',
+    answerTiles: 'Answer tiles',
+    questionLabel: 'Question',
+    noQuizGenerated: 'Generate a quiz first to edit or launch it.',
+    hostReady: 'Host controls are ready.',
+    localSessionNote: 'This session runs locally in the current app as a presenter scaffold.',
+    testOllama: 'Test Ollama Connection',
+    testingOllama: 'Testing Ollama...',
+    ollamaReachable: 'Ollama is reachable.',
+    ollamaModelMissing: 'Ollama is reachable, but the configured model is not installed.',
   },
   de: {
     appName: 'LexiView',
@@ -279,6 +347,40 @@ const COPY: Record<UiLanguage, UiCopy> = {
     translation: 'Ubersetzung',
     fillInTheBlank: 'Luckentext',
     errorDetection: 'Fehler finden',
+    generatedQuiz: 'Erzeugtes Quiz',
+    regenerateAll: 'Alles neu erzeugen',
+    regenerate: 'Neu erzeugen',
+    addQuestion: 'Leere Frage',
+    launchSession: 'Session starten ->',
+    editQuestion: 'Frage bearbeiten',
+    saveChanges: 'Speichern',
+    cancel: 'Abbrechen',
+    deleteQuestion: 'Loschen',
+    moveUp: 'Nach oben',
+    moveDown: 'Nach unten',
+    explanationLabel: 'Erklarung',
+    correctAnswer: 'Richtige Antwort',
+    optionLabel: 'Option',
+    presenterView: 'Presenter Ansicht',
+    lobby: 'Lobby',
+    startQuiz: 'Quiz starten ->',
+    nextQuestion: 'Weiter ->',
+    revealAnswer: 'Antwort zeigen',
+    showLeaderboard: 'Bestenliste',
+    finishQuiz: 'Quiz beenden',
+    backToBuilder: 'Zuruck zum Builder',
+    participants: 'Teilnehmer',
+    joinLink: 'Join Link',
+    sessionCode: 'Session Code',
+    answerTiles: 'Antwortfelder',
+    questionLabel: 'Frage',
+    noQuizGenerated: 'Erzeuge zuerst ein Quiz, um es zu bearbeiten oder zu starten.',
+    hostReady: 'Host Steuerung ist bereit.',
+    localSessionNote: 'Diese Session lauft lokal in der aktuellen App als Presenter Gerust.',
+    testOllama: 'Ollama Verbindung testen',
+    testingOllama: 'Ollama wird getestet...',
+    ollamaReachable: 'Ollama ist erreichbar.',
+    ollamaModelMissing: 'Ollama ist erreichbar, aber das konfigurierte Modell ist nicht installiert.',
   },
   fr: {
     appName: 'LexiView',
@@ -371,6 +473,40 @@ const COPY: Record<UiLanguage, UiCopy> = {
     translation: 'Traduction',
     fillInTheBlank: 'Texte a trou',
     errorDetection: 'Detection d erreur',
+    generatedQuiz: 'Quiz genere',
+    regenerateAll: 'Tout regenerer',
+    regenerate: 'Regenerer',
+    addQuestion: 'Ajouter une question vide',
+    launchSession: 'Lancer la session ->',
+    editQuestion: 'Modifier la question',
+    saveChanges: 'Enregistrer',
+    cancel: 'Annuler',
+    deleteQuestion: 'Supprimer',
+    moveUp: 'Monter',
+    moveDown: 'Descendre',
+    explanationLabel: 'Explication',
+    correctAnswer: 'Bonne reponse',
+    optionLabel: 'Option',
+    presenterView: 'Vue presentateur',
+    lobby: 'Salon',
+    startQuiz: 'Demarrer le quiz ->',
+    nextQuestion: 'Suivant ->',
+    revealAnswer: 'Afficher la reponse',
+    showLeaderboard: 'Classement',
+    finishQuiz: 'Terminer le quiz',
+    backToBuilder: 'Retour au generateur',
+    participants: 'Participants',
+    joinLink: 'Lien',
+    sessionCode: 'Code session',
+    answerTiles: 'Tuiles de reponse',
+    questionLabel: 'Question',
+    noQuizGenerated: 'Generez d abord un quiz pour le modifier ou le lancer.',
+    hostReady: 'Les controles hote sont prets.',
+    localSessionNote: 'Cette session fonctionne localement dans l application comme squelette presentateur.',
+    testOllama: 'Tester la connexion Ollama',
+    testingOllama: 'Test Ollama en cours...',
+    ollamaReachable: 'Ollama est joignable.',
+    ollamaModelMissing: 'Ollama est joignable, mais le modele configure n est pas installe.',
   },
 }
 

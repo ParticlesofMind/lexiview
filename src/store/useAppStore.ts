@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type {
   AppView,
+  GeneratedQuiz,
+  QuizQuestion,
+  QuizSession,
   QuizBuilderConfig,
   DictionaryEntry,
   ReaderSettings,
@@ -18,6 +21,8 @@ interface AppStore {
   isLoading: boolean
   settings: ReaderSettings
   quizBuilderConfig: QuizBuilderConfig
+  generatedQuiz: GeneratedQuiz | null
+  activeSession: QuizSession | null
   activeView: AppView
   currentUser: UserProfile | null
   setPdfFile: (file: File | null) => void
@@ -29,6 +34,14 @@ interface AppStore {
   setIsLoading: (loading: boolean) => void
   updateSettings: (settings: Partial<ReaderSettings>) => void
   updateQuizBuilderConfig: (settings: Partial<QuizBuilderConfig>) => void
+  setGeneratedQuiz: (quiz: GeneratedQuiz | null) => void
+  updateGeneratedQuizTitle: (title: string) => void
+  updateGeneratedQuestion: (position: number, question: QuizQuestion) => void
+  deleteGeneratedQuestion: (position: number) => void
+  addGeneratedQuestion: (question: QuizQuestion) => void
+  moveGeneratedQuestion: (position: number, direction: 'up' | 'down') => void
+  setActiveSession: (session: QuizSession | null) => void
+  updateActiveSession: (partial: Partial<QuizSession>) => void
   setActiveView: (view: AppView) => void
   signInLocally: (username: string) => void
   signOutLocally: () => void
@@ -72,6 +85,8 @@ export const useAppStore = create<AppStore>()(
       isLoading: false,
       settings: defaultSettings,
       quizBuilderConfig: defaultQuizBuilderConfig,
+      generatedQuiz: null,
+      activeSession: null,
       activeView: 'dashboard',
       currentUser: null,
       setPdfFile: (file) => set({ pdfFile: file }),
@@ -137,6 +152,103 @@ export const useAppStore = create<AppStore>()(
             ...partial,
           },
         })),
+      setGeneratedQuiz: (quiz) => set({ generatedQuiz: quiz }),
+      updateGeneratedQuizTitle: (title) =>
+        set((state) =>
+          state.generatedQuiz
+            ? {
+                generatedQuiz: {
+                  ...state.generatedQuiz,
+                  title,
+                },
+              }
+            : state
+        ),
+      updateGeneratedQuestion: (position, question) =>
+        set((state) => {
+          if (!state.generatedQuiz) return state
+
+          return {
+            generatedQuiz: {
+              ...state.generatedQuiz,
+              questions: state.generatedQuiz.questions.map((entry) =>
+                entry.position === position ? question : entry
+              ),
+            },
+          }
+        }),
+      deleteGeneratedQuestion: (position) =>
+        set((state) => {
+          if (!state.generatedQuiz) return state
+
+          const questions = state.generatedQuiz.questions
+            .filter((entry) => entry.position !== position)
+            .map((entry, index) => ({ ...entry, position: index + 1 }))
+
+          return {
+            generatedQuiz: {
+              ...state.generatedQuiz,
+              questions,
+            },
+          }
+        }),
+      addGeneratedQuestion: (question) =>
+        set((state) => {
+          if (!state.generatedQuiz) {
+            return {
+              generatedQuiz: {
+                title: defaultQuizBuilderConfig.title,
+                questions: [{ ...question, position: 1 }],
+              },
+            }
+          }
+
+          const nextQuestions = [
+            ...state.generatedQuiz.questions,
+            { ...question, position: state.generatedQuiz.questions.length + 1 },
+          ]
+
+          return {
+            generatedQuiz: {
+              ...state.generatedQuiz,
+              questions: nextQuestions,
+            },
+          }
+        }),
+      moveGeneratedQuestion: (position, direction) =>
+        set((state) => {
+          if (!state.generatedQuiz) return state
+
+          const items = [...state.generatedQuiz.questions]
+          const currentIndex = items.findIndex((entry) => entry.position === position)
+
+          if (currentIndex === -1) return state
+
+          const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+          if (targetIndex < 0 || targetIndex >= items.length) return state
+
+          const [moved] = items.splice(currentIndex, 1)
+          items.splice(targetIndex, 0, moved)
+
+          return {
+            generatedQuiz: {
+              ...state.generatedQuiz,
+              questions: items.map((entry, index) => ({ ...entry, position: index + 1 })),
+            },
+          }
+        }),
+      setActiveSession: (session) => set({ activeSession: session }),
+      updateActiveSession: (partial) =>
+        set((state) =>
+          state.activeSession
+            ? {
+                activeSession: {
+                  ...state.activeSession,
+                  ...partial,
+                },
+              }
+            : state
+        ),
       setActiveView: (view) => set({ activeView: view }),
       signInLocally: (username) =>
         set((state) => ({
@@ -164,6 +276,8 @@ export const useAppStore = create<AppStore>()(
         dictionaryEntry: state.dictionaryEntry,
         savedWords: state.savedWords,
         quizBuilderConfig: state.quizBuilderConfig,
+        generatedQuiz: state.generatedQuiz,
+        activeSession: state.activeSession,
         currentUser: state.currentUser,
         activeView: state.activeView,
       }),
