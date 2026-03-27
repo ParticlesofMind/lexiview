@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { getUiCopy } from '../lib/i18n'
-import type { QuizType } from '../types/dictionary'
+import { generateQuiz } from '../lib/quizGenerator'
+import type { GeneratedQuiz, QuizType } from '../types/dictionary'
 
 const QUIZ_LANGUAGES = ['German', 'English', 'French', 'Italian', 'Spanish'] as const
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
@@ -11,6 +12,8 @@ export function QuizBuilderView() {
   const { selectedLanguage, quizBuilderConfig, updateQuizBuilderConfig } = useAppStore()
   const copy = getUiCopy(selectedLanguage)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const quizTypeLabels: Record<QuizType, string> = {
     vocabulary: copy.vocabulary,
@@ -21,11 +24,24 @@ export function QuizBuilderView() {
     error_detection: copy.errorDetection,
   }
 
-  const onGenerate = () => {
+  const onGenerate = async () => {
+    setErrorMessage(null)
+    setGeneratedQuiz(null)
     setIsGenerating(true)
-    window.setTimeout(() => {
+
+    try {
+      const result = await generateQuiz(quizBuilderConfig)
+      setGeneratedQuiz(result)
+
+      if (!quizBuilderConfig.title.trim()) {
+        updateQuizBuilderConfig({ title: result.title })
+      }
+    } catch (error) {
+      const fallbackMessage = 'Could not generate quiz right now. Check API key/network and try again.'
+      setErrorMessage(error instanceof Error ? error.message : fallbackMessage)
+    } finally {
       setIsGenerating(false)
-    }, 900)
+    }
   }
 
   return (
@@ -193,6 +209,68 @@ export function QuizBuilderView() {
                 <div className="h-16 animate-pulse bg-[#0f0f0f]/8 dark:bg-[#f5f5f0]/10" />
                 <div className="h-16 animate-pulse bg-[#0f0f0f]/8 dark:bg-[#f5f5f0]/10" />
                 <div className="h-16 animate-pulse bg-[#0f0f0f]/8 dark:bg-[#f5f5f0]/10" />
+              </div>
+            )}
+
+            {errorMessage && (
+              <p className="mt-4 text-sm text-[#b91c1c] dark:text-[#fca5a5]" role="alert">
+                {errorMessage}
+              </p>
+            )}
+
+            {generatedQuiz && (
+              <div className="mt-6 border-t border-[#0f0f0f]/12 dark:border-[#f5f5f0]/12 pt-5">
+                <h2 className="text-lg sm:text-xl font-semibold text-[#0f0f0f] dark:text-[#f5f5f0]">
+                  {generatedQuiz.title}
+                </h2>
+                <p className="mt-1 text-xs font-mono uppercase tracking-widest opacity-60 dark:text-[#f5f5f0]">
+                  {generatedQuiz.questions.length} questions
+                </p>
+
+                <div className="mt-4 grid gap-3 max-h-[48vh] overflow-y-auto pr-1">
+                  {generatedQuiz.questions.map((question) => (
+                    <article
+                      key={`q-${question.position}`}
+                      className="border border-[#0f0f0f]/16 dark:border-[#f5f5f0]/18 bg-[#f5f5f0]/80 dark:bg-[#0f0f0f]/80 p-4"
+                    >
+                      <p className="text-[11px] font-mono uppercase tracking-widest text-[#2563eb]">
+                        Question {question.position}
+                      </p>
+                      <h3 className="mt-2 text-sm sm:text-base font-medium text-[#0f0f0f] dark:text-[#f5f5f0]">
+                        {question.prompt}
+                      </h3>
+
+                      <ul className="mt-3 grid gap-2">
+                        {question.options.map((option) => {
+                          const isCorrect = option.label === question.correct_answer
+                          return (
+                            <li
+                              key={option.label}
+                              className={`border px-3 py-2 text-sm ${
+                                isCorrect
+                                  ? 'border-[#16a34a] bg-[#16a34a]/10 dark:bg-[#16a34a]/20'
+                                  : 'border-[#0f0f0f]/16 dark:border-[#f5f5f0]/16'
+                              }`}
+                            >
+                              <span className="font-mono text-xs mr-2">{option.label}</span>
+                              {option.text}
+                              {isCorrect && <span className="ml-2 text-[#16a34a] font-semibold">(correct)</span>}
+                            </li>
+                          )
+                        })}
+                      </ul>
+
+                      <details className="mt-3">
+                        <summary className="cursor-pointer text-xs font-mono uppercase tracking-widest opacity-70 dark:text-[#f5f5f0]">
+                          Explanation
+                        </summary>
+                        <p className="mt-2 text-sm text-[#0f0f0f]/80 dark:text-[#f5f5f0]/80">
+                          {question.explanation}
+                        </p>
+                      </details>
+                    </article>
+                  ))}
+                </div>
               </div>
             )}
           </div>

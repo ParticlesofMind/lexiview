@@ -72,6 +72,24 @@ export interface QuizBuilderConfig {
   title: string
 }
 
+export interface QuizOption {
+  label: 'A' | 'B' | 'C' | 'D'
+  text: string
+}
+
+export interface QuizQuestion {
+  position: number
+  prompt: string
+  options: QuizOption[]
+  correct_answer: 'A' | 'B' | 'C' | 'D'
+  explanation: string
+}
+
+export interface GeneratedQuiz {
+  title: string
+  questions: QuizQuestion[]
+}
+
 export interface UserProfile {
   username: string
   joinedAt: string

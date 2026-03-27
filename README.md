@@ -11,6 +11,21 @@ Currently, two official plugins are available:
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
+## AI Quiz Generator Setup
+
+The Quiz Builder calls Anthropic directly and requires an API key.
+
+1. Create a `.env` file in the project root.
+2. Add the key below:
+
+```bash
+VITE_ANTHROPIC_API_KEY=your_anthropic_key_here
+```
+
+3. Restart the dev server.
+
+If the key is missing or invalid, the generator now shows a clear error message in the UI.
+
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
