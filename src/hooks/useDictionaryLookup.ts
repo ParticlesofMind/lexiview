@@ -24,6 +24,22 @@ function isLikelyNoun(partOfSpeech: string): boolean {
   )
 }
 
+function isLikelyAdjective(partOfSpeech: string): boolean {
+  const value = partOfSpeech.toLowerCase()
+  return (
+    value.includes('adjective') ||
+    value.includes('adjektiv') ||
+    value.includes('adjectif') ||
+    value.includes('adj.')
+  )
+}
+
+function imageHint(word: string, meanings: Meaning[]): string {
+  const hasAdj = meanings.some((meaning) => isLikelyAdjective(meaning.partOfSpeech ?? ''))
+  if (hasAdj) return `${word} facial expression comparison`
+  return word
+}
+
 async function fetchWikipediaImage(word: string, lang: Lang) {
   const endpoint = `https://${lang}.wikipedia.org/w/api.php?action=query&origin=*&format=json&prop=pageimages&piprop=thumbnail&pithumbsize=640&titles=${encodeURIComponent(word)}`
   const res = await fetch(endpoint)
@@ -37,6 +53,16 @@ async function fetchWikipediaImage(word: string, lang: Lang) {
     imageUrl: firstPage?.thumbnail?.source,
     imageSource: firstPage?.thumbnail?.source ? 'Wikipedia' : undefined,
   }
+}
+
+async function fetchWikimediaSearchImage(query: string, lang: Lang) {
+  const searchEndpoint = `https://${lang}.wikipedia.org/w/api.php?action=query&origin=*&format=json&list=search&srsearch=${encodeURIComponent(query)}&srlimit=1`
+  const searchRes = await fetch(searchEndpoint)
+  if (!searchRes.ok) return { imageUrl: undefined, imageSource: undefined }
+  const searchData = await searchRes.json()
+  const firstTitle = searchData?.query?.search?.[0]?.title as string | undefined
+  if (!firstTitle) return { imageUrl: undefined, imageSource: undefined }
+  return fetchWikipediaImage(firstTitle, lang)
 }
 
 function detectLanguage(word: string, override: 'en' | 'de' | 'fr' | 'auto'): Lang {
@@ -69,10 +95,14 @@ async function fetchFromFreeDict(word: string, lang: Lang): Promise<DictionaryEn
   }))
 
   const quickMeaning = meanings[0]?.definitions?.[0]?.definition
-  const shouldFetchImage = meanings.some((meaning: Meaning) =>
-    isLikelyNoun(meaning.partOfSpeech ?? '')
+  const shouldFetchImage = meanings.some(
+    (meaning: Meaning) =>
+      isLikelyNoun(meaning.partOfSpeech ?? '') || isLikelyAdjective(meaning.partOfSpeech ?? '')
   )
-  const image = shouldFetchImage ? await fetchWikipediaImage(entry.word ?? word, lang) : undefined
+  let image = shouldFetchImage ? await fetchWikipediaImage(entry.word ?? word, lang) : undefined
+  if (shouldFetchImage && !image?.imageUrl) {
+    image = await fetchWikimediaSearchImage(imageHint(entry.word ?? word, meanings), lang)
+  }
 
   return {
     word: entry.word,
@@ -113,8 +143,14 @@ async function fetchGerman(word: string): Promise<DictionaryEntry | null> {
   }))
 
   const quickMeaning = meanings[0]?.definitions?.[0]?.definition
-  const shouldFetchImage = meanings.some((meaning) => isLikelyNoun(meaning.partOfSpeech ?? ''))
-  const image = shouldFetchImage ? await fetchWikipediaImage(word, 'de') : undefined
+  const shouldFetchImage = meanings.some(
+    (meaning) =>
+      isLikelyNoun(meaning.partOfSpeech ?? '') || isLikelyAdjective(meaning.partOfSpeech ?? '')
+  )
+  let image = shouldFetchImage ? await fetchWikipediaImage(word, 'de') : undefined
+  if (shouldFetchImage && !image?.imageUrl) {
+    image = await fetchWikimediaSearchImage(imageHint(word, meanings), 'de')
+  }
 
   return {
     word,

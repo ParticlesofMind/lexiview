@@ -22,7 +22,7 @@ interface AppStore {
   setSelectedWord: (word: string | null) => void
   setSelectedLanguage: (lang: 'en' | 'de' | 'fr' | 'auto') => void
   setDictionaryEntry: (entry: DictionaryEntry | null) => void
-  saveWord: (entry: DictionaryEntry) => void
+  saveWord: (entry: DictionaryEntry, sourceTitle: string) => void
   removeSavedWord: (word: string, language: 'en' | 'de' | 'fr') => void
   setIsLoading: (loading: boolean) => void
   updateSettings: (settings: Partial<ReaderSettings>) => void
@@ -63,12 +63,13 @@ export const useAppStore = create<AppStore>()(
       setSelectedWord: (word) => set({ selectedWord: word }),
       setSelectedLanguage: (lang: 'en' | 'de' | 'fr' | 'auto') => set({ selectedLanguage: lang }),
       setDictionaryEntry: (entry) => set({ dictionaryEntry: entry }),
-      saveWord: (entry) =>
+      saveWord: (entry, sourceTitle) =>
         set((state) => {
           const alreadySaved = state.savedWords.some(
             (saved) =>
               saved.word.toLowerCase() === entry.word.toLowerCase() &&
-              saved.language === entry.language
+              saved.language === entry.language &&
+              saved.sourceTitle === sourceTitle
           )
 
           if (alreadySaved) return state
@@ -78,6 +79,7 @@ export const useAppStore = create<AppStore>()(
               word: entry.word,
               language: entry.language,
               savedAt: new Date().toISOString(),
+              sourceTitle,
               entry,
             },
             ...state.savedWords,

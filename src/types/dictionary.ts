@@ -45,6 +45,7 @@ export interface SavedWord {
   word: string
   language: 'en' | 'de' | 'fr'
   savedAt: string
+  sourceTitle: string
   entry: DictionaryEntry
 }
 

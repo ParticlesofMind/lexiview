@@ -6,6 +6,7 @@ export function DictionaryPanel() {
   const {
     selectedWord,
     selectedLanguage,
+    pdfFile,
     dictionaryEntry,
     isLoading,
     savedWords,
@@ -82,7 +83,7 @@ export function DictionaryPanel() {
           <>
             <div className="flex items-center justify-end mb-3">
               <button
-                onClick={() => saveWord(dictionaryEntry)}
+                onClick={() => saveWord(dictionaryEntry, pdfFile?.name ?? 'General Set')}
                 className="text-[10px] font-mono uppercase tracking-widest border border-[#2563eb] text-[#2563eb] px-2 py-1 hover:bg-[#2563eb] hover:text-white transition-colors"
               >
                 {copy.saveWord}

@@ -58,6 +58,19 @@ type UiCopy = {
   readerEmptyTitle: string
   readerEmptyBody: string
   wordBankEmpty: string
+  practice: string
+  test: string
+  setsBySource: string
+  tapToFlip: string
+  wordType: string
+  primaryDefinitions: string
+  testInstruction: string
+  yourAnswer: string
+  check: string
+  correct: string
+  tryAgain: string
+  reveal: string
+  generalSet: string
 }
 
 const COPY: Record<UiLanguage, UiCopy> = {
@@ -117,6 +130,19 @@ const COPY: Record<UiLanguage, UiCopy> = {
     readerEmptyTitle: 'Open Reader to start reading',
     readerEmptyBody: 'Use the top menu and choose Reader.',
     wordBankEmpty: 'No saved words yet.',
+    practice: 'Practice',
+    test: 'Test',
+    setsBySource: 'Sets by source',
+    tapToFlip: 'Tap card to flip',
+    wordType: 'Word type',
+    primaryDefinitions: 'Primary definitions',
+    testInstruction: 'Type the word that matches the clue.',
+    yourAnswer: 'Your answer',
+    check: 'Check',
+    correct: 'Correct',
+    tryAgain: 'Try again',
+    reveal: 'Reveal',
+    generalSet: 'General Set',
   },
   de: {
     appName: 'LexiView',
@@ -174,6 +200,19 @@ const COPY: Record<UiLanguage, UiCopy> = {
     readerEmptyTitle: 'Offne den Leser zum Starten',
     readerEmptyBody: 'Nutze das obere Menu und wahle Leser.',
     wordBankEmpty: 'Noch keine gespeicherten Worte.',
+    practice: 'Uben',
+    test: 'Test',
+    setsBySource: 'Sets nach Quelle',
+    tapToFlip: 'Karte antippen zum Umdrehen',
+    wordType: 'Wortart',
+    primaryDefinitions: 'Primare Definitionen',
+    testInstruction: 'Tippe das Wort passend zum Hinweis.',
+    yourAnswer: 'Deine Antwort',
+    check: 'Prufen',
+    correct: 'Richtig',
+    tryAgain: 'Nochmal',
+    reveal: 'Auflosen',
+    generalSet: 'Allgemeines Set',
   },
   fr: {
     appName: 'LexiView',
@@ -231,6 +270,19 @@ const COPY: Record<UiLanguage, UiCopy> = {
     readerEmptyTitle: 'Ouvrez le lecteur pour commencer',
     readerEmptyBody: 'Utilisez le menu du haut et choisissez Lecteur.',
     wordBankEmpty: 'Aucun mot sauvegarde pour le moment.',
+    practice: 'Pratique',
+    test: 'Test',
+    setsBySource: 'Ensembles par source',
+    tapToFlip: 'Touchez la carte pour retourner',
+    wordType: 'Type de mot',
+    primaryDefinitions: 'Definitions principales',
+    testInstruction: 'Tapez le mot qui correspond a l indice.',
+    yourAnswer: 'Votre reponse',
+    check: 'Verifier',
+    correct: 'Correct',
+    tryAgain: 'Reessayer',
+    reveal: 'Afficher',
+    generalSet: 'Ensemble general',
   },
 }
 
