@@ -7,7 +7,11 @@ import type {
 
 type OllamaGenerateResponse = {
   response?: string
+  thinking?: string
   error?: string
+  message?: {
+    content?: string
+  }
 }
 
 export interface OllamaRuntimeConfig {
@@ -234,7 +238,7 @@ export function getOllamaBaseUrl() {
 }
 
 export function getOllamaModel() {
-  return getStoredValue(OLLAMA_MODEL_KEY) || import.meta.env.VITE_OLLAMA_MODEL || 'llama3.1:8b'
+  return getStoredValue(OLLAMA_MODEL_KEY) || import.meta.env.VITE_OLLAMA_MODEL || 'qwen3.5:latest'
 }
 
 export function getOllamaApiKey() {
@@ -296,6 +300,7 @@ async function requestOllama(config: QuizBuilderConfig, extraInstruction?: strin
       prompt: buildPrompt(config, extraInstruction),
       format: 'json',
       stream: false,
+      think: false,
     }),
   })
 
@@ -310,11 +315,16 @@ async function requestOllama(config: QuizBuilderConfig, extraInstruction?: strin
     throw new Error(`Ollama returned an error: ${payload.error}`)
   }
 
-  if (!payload.response) {
-    throw new Error('Ollama response did not include generated text.')
+  const text = payload.response?.trim() || payload.message?.content?.trim() || ''
+
+  if (!text) {
+    const thinkingNote = payload.thinking?.trim()
+      ? ' Model returned thinking output without a final response; thinking mode is now disabled, so retry once.'
+      : ''
+    throw new Error(`Ollama response did not include generated text.${thinkingNote}`)
   }
 
-  return payload.response
+  return text
 }
 
 function parseGeneratedQuiz(rawResponse: string, config: QuizBuilderConfig): GeneratedQuiz {

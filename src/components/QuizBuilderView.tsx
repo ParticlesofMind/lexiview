@@ -10,25 +10,14 @@ import {
   saveOllamaRuntimeConfig,
   testOllamaConnection,
 } from '../lib/quizGenerator'
-import type { GeneratedQuiz, QuizQuestion, QuizType, SessionParticipant } from '../types/dictionary'
+import { getAppwriteEndpoint, getAppwriteProjectName, pingAppwrite } from '../lib/appwrite'
+import { createQuizAndSession } from '../lib/appwriteQuizBackend'
+import type { GeneratedQuiz, QuizQuestion, QuizType } from '../types/dictionary'
 
 const QUIZ_LANGUAGES = ['German', 'English', 'French', 'Italian', 'Spanish'] as const
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
 const OPTION_COUNTS = [2, 3, 4] as const
 const QUESTION_LABELS = ['A', 'B', 'C', 'D'] as const
-const SAMPLE_NICKNAMES = [
-  'Mia',
-  'Noah',
-  'Lina',
-  'Elias',
-  'Sofia',
-  'Leo',
-  'Emma',
-  'Milan',
-  'Zoe',
-  'Nora',
-]
-
 type DraftQuestion = QuizQuestion
 
 function buildBlankQuestion(optionCount: number, position: number): DraftQuestion {
@@ -44,14 +33,6 @@ function buildBlankQuestion(optionCount: number, position: number): DraftQuestio
     correct_answer: labels[0],
     explanation: '',
   }
-}
-
-function createParticipants(): SessionParticipant[] {
-  return SAMPLE_NICKNAMES.slice(0, 6).map((nickname, index) => ({
-    id: `participant-${index + 1}`,
-    nickname,
-    score: 0,
-  }))
 }
 
 function normalizeQuizPositions(quiz: GeneratedQuiz): GeneratedQuiz {
@@ -76,16 +57,18 @@ export function QuizBuilderView() {
     deleteGeneratedQuestion,
     addGeneratedQuestion,
     moveGeneratedQuestion,
-    setActiveSession,
-    setActiveView,
+    currentUser,
   } = useAppStore()
 
   const copy = getUiCopy(selectedLanguage)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isLaunchingSession, setIsLaunchingSession] = useState(false)
   const [isTestingConnection, setIsTestingConnection] = useState(false)
+  const [isTestingAppwrite, setIsTestingAppwrite] = useState(false)
   const [regeneratingPosition, setRegeneratingPosition] = useState<number | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [connectionMessage, setConnectionMessage] = useState<string | null>(null)
+  const [appwriteMessage, setAppwriteMessage] = useState<string | null>(null)
   const [editingQuestion, setEditingQuestion] = useState<DraftQuestion | null>(null)
   const [ollamaSettings, setOllamaSettings] = useState(getOllamaRuntimeConfig)
 
@@ -144,32 +127,33 @@ export function QuizBuilderView() {
     )
   }
 
-  const onLaunchSession = () => {
+  const onLaunchSession = async () => {
     if (!generatedQuiz || generatedQuiz.questions.length === 0) {
       setErrorMessage(copy.noQuizGenerated)
       return
     }
 
-    const sessionId = `session-${Math.random().toString(36).slice(2, 8)}`
-    const shortCode = sessionId.slice(-6).toUpperCase()
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173'
+    setIsLaunchingSession(true)
+    setErrorMessage(null)
 
-    setActiveSession({
-      id: sessionId,
-      quizTitle: generatedQuiz.title,
-      joinUrl: `${origin}/join/${sessionId}`,
-      shortCode,
-      status: 'lobby',
-      currentQuestionIndex: 0,
-      questionStartedAt: null,
-      participants: createParticipants(),
-    })
-    setActiveView('quizsession')
+    try {
+      const { session } = await createQuizAndSession({
+        generatedQuiz,
+        config: quizBuilderConfig,
+        hostName: currentUser?.username || 'Host',
+      })
+      window.location.hash = `/session/${session.id}`
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not launch session.')
+    } finally {
+      setIsLaunchingSession(false)
+    }
   }
 
   const onTestConnection = async () => {
     setErrorMessage(null)
     setConnectionMessage(null)
+    setAppwriteMessage(null)
     setIsTestingConnection(true)
 
     try {
@@ -186,7 +170,26 @@ export function QuizBuilderView() {
   const onSaveOllamaSettings = () => {
     saveOllamaRuntimeConfig(ollamaSettings)
     setConnectionMessage(copy.ollamaSettingsSaved)
+    setAppwriteMessage(null)
     setErrorMessage(null)
+  }
+
+  const onTestAppwrite = async () => {
+    setErrorMessage(null)
+    setConnectionMessage(null)
+    setAppwriteMessage(null)
+    setIsTestingAppwrite(true)
+
+    try {
+      const result = await pingAppwrite()
+      setAppwriteMessage(
+        `Appwrite ping OK. Project: ${getAppwriteProjectName()} (${result.projectId}) | version: ${result.version} | endpoint: ${result.endpoint}`
+      )
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not ping Appwrite.')
+    } finally {
+      setIsTestingAppwrite(false)
+    }
   }
 
   return (
@@ -230,7 +233,7 @@ export function QuizBuilderView() {
                 <input
                   value={ollamaSettings.model}
                   onChange={(e) => setOllamaSettings((current) => ({ ...current, model: e.target.value }))}
-                  placeholder="llama3.1:8b"
+                  placeholder="qwen3.5:latest"
                   className="border border-[#0f0f0f]/30 dark:border-[#f5f5f0]/30 bg-transparent px-2 py-2 text-sm"
                 />
               </label>
@@ -396,6 +399,15 @@ export function QuizBuilderView() {
 
               <button
                 type="button"
+                onClick={onTestAppwrite}
+                disabled={isTestingAppwrite}
+                className="px-4 py-3 border border-[#0f0f0f]/25 dark:border-[#f5f5f0]/25 text-xs font-mono uppercase tracking-widest hover:border-[#2563eb] hover:text-[#2563eb] disabled:opacity-60 transition-colors"
+              >
+                {isTestingAppwrite ? 'Pinging Appwrite...' : 'Send Appwrite Ping'}
+              </button>
+
+              <button
+                type="button"
                 onClick={onGenerate}
                 disabled={isGenerating || quizBuilderConfig.topic.trim().length === 0}
                 className="px-4 py-3 border border-[#0f0f0f]/25 dark:border-[#f5f5f0]/25 text-xs font-mono uppercase tracking-widest hover:border-[#2563eb] hover:text-[#2563eb] disabled:opacity-60 transition-colors"
@@ -414,10 +426,10 @@ export function QuizBuilderView() {
               <button
                 type="button"
                 onClick={onLaunchSession}
-                disabled={!generatedQuiz || generatedQuiz.questions.length === 0}
+                disabled={!generatedQuiz || generatedQuiz.questions.length === 0 || isLaunchingSession}
                 className="px-4 py-3 border border-[#0f0f0f]/25 dark:border-[#f5f5f0]/25 text-xs font-mono uppercase tracking-widest hover:border-[#2563eb] hover:text-[#2563eb] disabled:opacity-50 transition-colors"
               >
-                {copy.launchSession}
+                {isLaunchingSession ? `${copy.launchSession}...` : copy.launchSession}
               </button>
             </div>
 
@@ -437,8 +449,16 @@ export function QuizBuilderView() {
               <p className="mt-4 text-sm text-[#166534] dark:text-[#86efac]" role="status">{connectionMessage}</p>
             )}
 
+            {appwriteMessage && (
+              <p className="mt-4 text-sm text-[#166534] dark:text-[#86efac]" role="status">{appwriteMessage}</p>
+            )}
+
             <p className="mt-3 text-xs text-[#0f0f0f]/55 dark:text-[#f5f5f0]/55">
               Ollama endpoint: {getOllamaBaseUrl()} | model: {getOllamaModel()}
+            </p>
+
+            <p className="mt-2 text-xs text-[#0f0f0f]/55 dark:text-[#f5f5f0]/55">
+              Appwrite endpoint: {getAppwriteEndpoint()} | project: {getAppwriteProjectName()}
             </p>
 
             {!generatedQuiz && !isGenerating && (

@@ -111,6 +111,118 @@ Quick verification from your laptop:
 curl https://ollama.yourdomain.com/api/tags
 ```
 
+## Appwrite Setup (Web)
+
+This project is Vite + React, so configure Appwrite as a React web platform.
+
+1. Copy `.env.example` to `.env` if you have not already.
+2. Ensure these values exist in `.env`:
+
+```bash
+VITE_APPWRITE_PROJECT_ID=69c67581001d745c197c
+VITE_APPWRITE_PROJECT_NAME=LexiView
+VITE_APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1
+VITE_APPWRITE_DATABASE_ID=lexiview
+VITE_APPWRITE_QUIZZES_COLLECTION_ID=quizzes
+VITE_APPWRITE_SESSIONS_COLLECTION_ID=sessions
+VITE_APPWRITE_PARTICIPANTS_COLLECTION_ID=participants
+VITE_APPWRITE_ANSWERS_COLLECTION_ID=answers
+```
+
+3. Install dependencies (already done if you ran `npm install`):
+
+```bash
+npm install
+```
+
+4. Start the app:
+
+```bash
+npm run dev
+```
+
+5. Open Quiz Builder and click `Send Appwrite Ping`.
+
+If ping succeeds, the UI prints Appwrite version, endpoint, and project id.
+
+### Appwrite database schema used by the live quiz flow
+
+Create one database with ID `lexiview` and these collections.
+
+`quizzes`
+
+- `title`: string
+- `topic`: string
+- `language`: string
+- `languageLevel`: string
+- `quizType`: string
+- `questionCount`: integer
+- `optionsPerQuestion`: integer
+- `timePerQuestion`: integer
+- `questionsJson`: string
+- `hostUserId`: string
+- `hostName`: string
+- `createdAt`: string
+
+`sessions`
+
+- `quizId`: string
+- `quizTitle`: string
+- `hostUserId`: string
+- `hostName`: string
+- `joinCode`: string
+- `joinUrl`: string
+- `status`: string
+- `currentQuestionIndex`: integer
+- `currentQuestionJson`: string
+- `revealJson`: string
+- `timePerQuestion`: integer
+- `questionStartedAt`: string
+- `endedAt`: string
+- `createdAt`: string
+
+`participants`
+
+- `sessionId`: string
+- `userId`: string
+- `nickname`: string
+- `deviceToken`: string
+- `score`: integer
+- `joinedAt`: string
+
+`answers`
+
+- `sessionId`: string
+- `questionIndex`: integer
+- `participantId`: string
+- `participantUserId`: string
+- `choice`: string
+- `isCorrect`: boolean
+- `responseTimeMs`: integer
+- `pointsAwarded`: integer
+- `submittedAt`: string
+
+Recommended indexes:
+
+- `participants.sessionId`
+- `participants.deviceToken`
+- `answers.sessionId`
+- `answers.questionIndex`
+
+Collection settings:
+
+- Enable document security.
+- The app assigns per-document permissions when creating quizzes, sessions, participants, and answers.
+- Guests must be allowed to create anonymous sessions in Appwrite Auth, because phone players join without accounts.
+
+### What is live now
+
+- Quiz generation still uses Ollama.
+- Launch Session now writes quiz/session records to Appwrite.
+- `#/join/:sessionId` creates a participant in Appwrite.
+- `#/play/:sessionId` reads live session state and submits answers to Appwrite.
+- `#/session/:sessionId` is now host presenter view backed by Appwrite realtime and document updates.
+
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:

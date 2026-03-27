@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { SettingsBar } from './components/SettingsBar'
 import { PdfPanel } from './components/PdfPanel'
 import { DictionaryPanel } from './components/DictionaryPanel'
@@ -8,10 +8,18 @@ import { AuthGate } from './components/AuthGate'
 import { WordBankView } from './components/WordBankView'
 import { QuizBuilderView } from './components/QuizBuilderView'
 import { HostSessionView } from './components/HostSessionView'
+import { JoinSessionView } from './components/JoinSessionView'
+import { PlaySessionView } from './components/PlaySessionView'
 import { useAppStore } from './store/useAppStore'
+
+function getHashRoute() {
+  if (typeof window === 'undefined') return ''
+  return window.location.hash.replace(/^#/, '')
+}
 
 export default function App() {
   const { settings, activeView, currentUser } = useAppStore()
+  const [hashRoute, setHashRoute] = useState(getHashRoute)
 
   useEffect(() => {
     const root = document.documentElement
@@ -21,6 +29,32 @@ export default function App() {
       root.classList.remove('dark')
     }
   }, [settings.theme])
+
+  useEffect(() => {
+    const onHashChange = () => setHashRoute(getHashRoute())
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  if (hashRoute.startsWith('/join/')) {
+    const sessionId = hashRoute.replace('/join/', '')
+    return <JoinSessionView sessionId={sessionId} />
+  }
+
+  if (hashRoute.startsWith('/play/')) {
+    const sessionId = hashRoute.replace('/play/', '')
+    return <PlaySessionView sessionId={sessionId} />
+  }
+
+  if (hashRoute.startsWith('/session/')) {
+    const sessionId = hashRoute.replace('/session/', '')
+
+    if (!currentUser) {
+      return <AuthGate />
+    }
+
+    return <HostSessionView sessionId={sessionId} />
+  }
 
   if (!currentUser) {
     return <AuthGate />
@@ -50,8 +84,6 @@ export default function App() {
       {activeView === 'wordbank' && <WordBankView />}
 
       {activeView === 'quizbuilder' && <QuizBuilderView />}
-
-      {activeView === 'quizsession' && <HostSessionView />}
     </div>
   )
 }

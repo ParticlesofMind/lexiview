@@ -2,7 +2,21 @@ import { useEffect, useMemo, useState } from 'react'
 import QRCode from 'qrcode'
 import { getUiCopy } from '../lib/i18n'
 import { useAppStore } from '../store/useAppStore'
-import type { QuizQuestion, QuizSessionStatus } from '../types/dictionary'
+import {
+  finishSession,
+  getQuiz,
+  getSession,
+  listAnswers,
+  listParticipants,
+  revealSessionQuestion,
+  setSessionLeaderboard,
+  startSessionQuestion,
+  subscribeToSessionChanges,
+  type AnswerRecord,
+  type ParticipantRecord,
+  type QuizRecord,
+  type SessionRecord,
+} from '../lib/appwriteQuizBackend'
 
 const OPTION_STYLES: Record<'A' | 'B' | 'C' | 'D', string> = {
   A: 'bg-[#e53935] text-white',
@@ -11,51 +25,60 @@ const OPTION_STYLES: Record<'A' | 'B' | 'C' | 'D', string> = {
   D: 'bg-[#43a047] text-white',
 }
 
-function scoreDelta(participantId: string, questionIndex: number) {
-  const sum = `${participantId}-${questionIndex}`.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  return 300 + (sum % 700)
-}
-
-function answerForParticipant(participantId: string, question: QuizQuestion): 'A' | 'B' | 'C' | 'D' {
-  const labels = question.options.map((option) => option.label)
-  const seed = `${participantId}-${question.position}`.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  return labels[seed % labels.length]
-}
-
-export function HostSessionView() {
-  const {
-    selectedLanguage,
-    quizBuilderConfig,
-    generatedQuiz,
-    activeSession,
-    updateActiveSession,
-    setActiveView,
-  } = useAppStore()
+export function HostSessionView({ sessionId }: { sessionId: string }) {
+  const { selectedLanguage } = useAppStore()
   const copy = getUiCopy(selectedLanguage)
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('')
-  const [remainingSeconds, setRemainingSeconds] = useState(quizBuilderConfig.timePerQuestion)
+  const [session, setSession] = useState<SessionRecord | null>(null)
+  const [quiz, setQuiz] = useState<QuizRecord | null>(null)
+  const [participants, setParticipants] = useState<ParticipantRecord[]>([])
+  const [answers, setAnswers] = useState<AnswerRecord[]>([])
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('')
+  const [remainingSeconds, setRemainingSeconds] = useState(0)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isMutating, setIsMutating] = useState(false)
 
-  const currentQuestion = generatedQuiz?.questions[activeSession?.currentQuestionIndex ?? 0]
+  const refresh = async () => {
+    const sessionRecord = await getSession(sessionId)
+    const [quizRecord, participantList, answerList] = await Promise.all([
+      getQuiz(sessionRecord.quizId),
+      listParticipants(sessionId),
+      listAnswers(sessionId, sessionRecord.currentQuestionIndex),
+    ])
 
-  const distribution = useMemo(() => {
-    if (!activeSession || !currentQuestion) {
-      return { A: 0, B: 0, C: 0, D: 0 }
-    }
-
-    return activeSession.participants.reduce(
-      (acc, participant) => {
-        const answer = answerForParticipant(participant.id, currentQuestion)
-        acc[answer] += 1
-        return acc
-      },
-      { A: 0, B: 0, C: 0, D: 0 }
-    )
-  }, [activeSession, currentQuestion])
+    setSession(sessionRecord)
+    setQuiz(quizRecord)
+    setParticipants(participantList)
+    setAnswers(answerList)
+  }
 
   useEffect(() => {
-    if (!activeSession?.joinUrl) return
+    let cancelled = false
 
-    void QRCode.toDataURL(activeSession.joinUrl, {
+    const load = async () => {
+      try {
+        await refresh()
+      } catch (error) {
+        if (!cancelled) {
+          setErrorMessage(error instanceof Error ? error.message : 'Could not load host session.')
+        }
+      }
+    }
+
+    void load()
+    const unsubscribe = subscribeToSessionChanges(sessionId, () => {
+      void load()
+    })
+
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [sessionId])
+
+  useEffect(() => {
+    if (!session?.joinUrl) return
+
+    void QRCode.toDataURL(session.joinUrl, {
       width: 360,
       margin: 2,
       color: {
@@ -63,170 +86,55 @@ export function HostSessionView() {
         light: '#f5f5f0',
       },
     }).then(setQrCodeDataUrl)
-  }, [activeSession?.joinUrl])
+  }, [session?.joinUrl])
 
   useEffect(() => {
-    if (!activeSession || activeSession.status !== 'question' || !activeSession.questionStartedAt) {
-      setRemainingSeconds(quizBuilderConfig.timePerQuestion)
+    if (!session || session.status !== 'question' || !session.questionStartedAt) {
+      setRemainingSeconds(session?.timePerQuestion ?? 0)
       return
     }
 
     const updateRemaining = () => {
-      const elapsedMs = Date.now() - new Date(activeSession.questionStartedAt as string).getTime()
-      const nextRemaining = Math.max(
-        0,
-        quizBuilderConfig.timePerQuestion - Math.floor(elapsedMs / 1000)
-      )
+      const elapsedMs = Date.now() - new Date(session.questionStartedAt as string).getTime()
+      const nextRemaining = Math.max(0, session.timePerQuestion - Math.floor(elapsedMs / 1000))
       setRemainingSeconds(nextRemaining)
-
-      if (nextRemaining === 0 && activeSession.status === 'question') {
-        updateActiveSession({ status: 'reveal' })
-      }
     }
 
     updateRemaining()
     const timer = window.setInterval(updateRemaining, 250)
     return () => window.clearInterval(timer)
-  }, [activeSession, quizBuilderConfig.timePerQuestion, updateActiveSession])
+  }, [session])
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!activeSession || !generatedQuiz) return
+  const sortedParticipants = useMemo(() => {
+    return [...participants].sort((left, right) => right.score - left.score)
+  }, [participants])
 
-      if (event.key === 'ArrowRight') {
-        if (activeSession.status === 'lobby') {
-          updateActiveSession({
-            status: 'question',
-            currentQuestionIndex: 0,
-            questionStartedAt: new Date().toISOString(),
-          })
-          return
-        }
-
-        if (activeSession.status === 'question') {
-          updateActiveSession({ status: 'reveal' })
-          return
-        }
-
-        if (activeSession.status === 'reveal') {
-          if (activeSession.currentQuestionIndex >= generatedQuiz.questions.length - 1) {
-            updateActiveSession({ status: 'finished' })
-          } else {
-            const nextIndex = activeSession.currentQuestionIndex + 1
-            const nextParticipants = activeSession.participants.map((participant) => {
-              const points = answerForParticipant(participant.id, currentQuestion as QuizQuestion) === (currentQuestion as QuizQuestion).correct_answer
-                ? scoreDelta(participant.id, activeSession.currentQuestionIndex)
-                : 0
-
-              return {
-                ...participant,
-                score: participant.score + points,
-              }
-            })
-
-            updateActiveSession({
-              status: nextIndex % 3 === 0 ? 'leaderboard' : 'question',
-              currentQuestionIndex: nextIndex % 3 === 0 ? activeSession.currentQuestionIndex : nextIndex,
-              questionStartedAt: nextIndex % 3 === 0 ? null : new Date().toISOString(),
-              participants: nextParticipants,
-            })
-          }
-          return
-        }
-
-        if (activeSession.status === 'leaderboard') {
-          updateActiveSession({
-            status: 'question',
-            currentQuestionIndex: activeSession.currentQuestionIndex + 1,
-            questionStartedAt: new Date().toISOString(),
-          })
-        }
-      }
-
-      if (event.key === 'ArrowLeft' && activeSession.currentQuestionIndex > 0) {
-        updateActiveSession({
-          status: 'question',
-          currentQuestionIndex: activeSession.currentQuestionIndex - 1,
-          questionStartedAt: new Date().toISOString(),
-        })
-      }
-    }
-
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [activeSession, currentQuestion, generatedQuiz, updateActiveSession])
-
-  if (!activeSession || !generatedQuiz) {
-    return (
-      <section className="flex-1 flex items-center justify-center p-6">
-        <div className="border border-[#0f0f0f]/20 dark:border-[#f5f5f0]/20 bg-[#f5f5f0]/88 dark:bg-[#111111] p-6 text-center max-w-lg">
-          <p className="text-sm text-[#0f0f0f]/70 dark:text-[#f5f5f0]/70">{copy.noQuizGenerated}</p>
-          <button
-            type="button"
-            onClick={() => setActiveView('quizbuilder')}
-            className="mt-4 px-4 py-2 border border-[#2563eb] bg-[#2563eb] text-white text-xs font-mono uppercase tracking-widest"
-          >
-            {copy.backToBuilder}
-          </button>
-        </div>
-      </section>
-    )
-  }
-
-  const sortedParticipants = [...activeSession.participants].sort((a, b) => b.score - a.score)
-  const questionNumber = activeSession.currentQuestionIndex + 1
-  const answerCount =
-    activeSession.status === 'question'
-      ? Math.min(activeSession.participants.length, Math.max(0, activeSession.participants.length - Math.floor(remainingSeconds / 3)))
-      : activeSession.participants.length
-  const progress = Math.max(0, Math.min(1, remainingSeconds / quizBuilderConfig.timePerQuestion))
+  const currentQuestion = quiz?.questions[session?.currentQuestionIndex ?? 0] || null
+  const answerCount = answers.length
+  const progress = session?.timePerQuestion ? Math.max(0, Math.min(1, remainingSeconds / session.timePerQuestion)) : 0
   const circumference = 2 * Math.PI * 52
   const strokeOffset = circumference * (1 - progress)
 
-  const startQuiz = () => {
-    updateActiveSession({
-      status: 'question',
-      currentQuestionIndex: 0,
-      questionStartedAt: new Date().toISOString(),
-    })
-  }
+  const runAction = async (action: () => Promise<void>) => {
+    setIsMutating(true)
+    setErrorMessage(null)
 
-  const revealAnswer = () => {
-    updateActiveSession({ status: 'reveal' })
-  }
-
-  const showLeaderboard = () => {
-    if (!currentQuestion) return
-
-    const nextParticipants = activeSession.participants.map((participant) => {
-      const points = answerForParticipant(participant.id, currentQuestion) === currentQuestion.correct_answer
-        ? scoreDelta(participant.id, activeSession.currentQuestionIndex)
-        : 0
-
-      return {
-        ...participant,
-        score: participant.score + points,
-      }
-    })
-
-    updateActiveSession({
-      status: 'leaderboard',
-      participants: nextParticipants,
-      questionStartedAt: null,
-    })
-  }
-
-  const nextQuestion = () => {
-    if (activeSession.currentQuestionIndex >= generatedQuiz.questions.length - 1) {
-      updateActiveSession({ status: 'finished', questionStartedAt: null })
-      return
+    try {
+      await action()
+      await refresh()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not update session.')
+    } finally {
+      setIsMutating(false)
     }
+  }
 
-    updateActiveSession({
-      status: 'question',
-      currentQuestionIndex: activeSession.currentQuestionIndex + 1,
-      questionStartedAt: new Date().toISOString(),
-    })
+  if (!session || !quiz) {
+    return (
+      <section className="flex-1 flex items-center justify-center p-6 bg-[#0f0f1a] text-white">
+        <p>{errorMessage || 'Loading session...'}</p>
+      </section>
+    )
   }
 
   return (
@@ -235,35 +143,28 @@ export function HostSessionView() {
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#4cc9f0]">{copy.presenterView}</p>
-            <h1 className="mt-1 text-2xl sm:text-4xl font-semibold">{activeSession.quizTitle}</h1>
+            <h1 className="mt-1 text-2xl sm:text-4xl font-semibold">{session.quizTitle}</h1>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => setActiveView('quizbuilder')}
-              className="px-4 py-2 rounded-2xl border border-white/20 text-xs font-mono uppercase tracking-widest"
-            >
-              {copy.backToBuilder}
-            </button>
+          <div className="text-xs font-mono uppercase tracking-widest text-white/60">
+            Host: {session.hostName}
           </div>
         </div>
 
-        {activeSession.status === 'lobby' && (
+        {session.status === 'lobby' && (
           <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-6 items-stretch">
             <div className="rounded-[32px] bg-white text-[#0f0f1a] p-6 sm:p-8 min-h-[420px] flex flex-col items-center justify-center">
               {qrCodeDataUrl && <img src={qrCodeDataUrl} alt="Session QR code" className="w-full max-w-[320px] rounded-[24px]" />}
               <p className="mt-5 text-xs font-mono uppercase tracking-[0.18em] text-[#2563eb]">{copy.joinLink}</p>
-              <p className="mt-2 text-sm sm:text-lg font-medium break-all text-center">{activeSession.joinUrl}</p>
+              <p className="mt-2 text-sm sm:text-lg font-medium break-all text-center">{session.joinUrl}</p>
               <p className="mt-5 text-xs font-mono uppercase tracking-[0.18em] text-[#2563eb]">{copy.sessionCode}</p>
-              <p className="mt-2 text-3xl sm:text-5xl font-black tracking-[0.24em]">{activeSession.shortCode}</p>
+              <p className="mt-2 text-3xl sm:text-5xl font-black tracking-[0.24em]">{session.joinCode}</p>
             </div>
 
             <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 sm:p-8">
               <p className="text-xs font-mono uppercase tracking-[0.18em] text-[#4cc9f0]">{copy.participants}</p>
-              <h2 className="mt-3 text-3xl font-semibold">{activeSession.participants.length}</h2>
-              <p className="mt-2 text-sm text-white/70">{copy.hostReady} {copy.localSessionNote}</p>
+              <h2 className="mt-3 text-3xl font-semibold">{participants.length}</h2>
               <div className="mt-6 grid grid-cols-2 gap-3">
-                {activeSession.participants.map((participant) => (
+                {participants.map((participant) => (
                   <div key={participant.id} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
                     {participant.nickname}
                   </div>
@@ -271,8 +172,11 @@ export function HostSessionView() {
               </div>
               <button
                 type="button"
-                onClick={startQuiz}
-                className="mt-6 w-full px-4 py-4 rounded-2xl bg-[#2563eb] text-white text-xs font-mono uppercase tracking-widest"
+                onClick={() => runAction(async () => {
+                  await startSessionQuestion(session.id, 0)
+                })}
+                disabled={isMutating || participants.length === 0}
+                className="mt-6 w-full px-4 py-4 rounded-2xl bg-[#2563eb] text-white text-xs font-mono uppercase tracking-widest disabled:opacity-60"
               >
                 {copy.startQuiz}
               </button>
@@ -280,14 +184,14 @@ export function HostSessionView() {
           </div>
         )}
 
-        {activeSession.status === 'question' && currentQuestion && (
+        {session.status === 'question' && session.currentQuestion && currentQuestion && (
           <div className="grid gap-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-mono uppercase tracking-[0.18em] text-[#4cc9f0]">
-                  {copy.questionLabel} {questionNumber} / {generatedQuiz.questions.length}
+                  {copy.questionLabel} {session.currentQuestion.position} / {quiz.questions.length}
                 </p>
-                <h2 className="mt-2 text-3xl sm:text-5xl font-semibold max-w-4xl">{currentQuestion.prompt}</h2>
+                <h2 className="mt-2 text-3xl sm:text-5xl font-semibold max-w-4xl">{session.currentQuestion.prompt}</h2>
               </div>
               <div className="flex items-center gap-4">
                 <div className="relative w-28 h-28">
@@ -309,13 +213,13 @@ export function HostSessionView() {
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-mono uppercase tracking-[0.18em] text-white/60">Answered</p>
-                  <p className="mt-1 text-2xl font-semibold">{answerCount} / {activeSession.participants.length}</p>
+                  <p className="mt-1 text-2xl font-semibold">{answerCount} / {participants.length}</p>
                 </div>
               </div>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
-              {currentQuestion.options.map((option) => (
+              {session.currentQuestion.options.map((option) => (
                 <div key={option.label} className={`rounded-[28px] p-6 min-h-[140px] ${OPTION_STYLES[option.label]}`}>
                   <p className="text-xs font-mono uppercase tracking-[0.18em]">{option.label}</p>
                   <p className="mt-3 text-xl sm:text-2xl font-semibold leading-snug">{option.text}</p>
@@ -326,8 +230,11 @@ export function HostSessionView() {
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={revealAnswer}
-                className="px-5 py-3 rounded-2xl border border-white/20 text-xs font-mono uppercase tracking-widest"
+                onClick={() => runAction(async () => {
+                  await revealSessionQuestion(session.id)
+                })}
+                disabled={isMutating}
+                className="px-5 py-3 rounded-2xl border border-white/20 text-xs font-mono uppercase tracking-widest disabled:opacity-60"
               >
                 {copy.revealAnswer}
               </button>
@@ -335,7 +242,7 @@ export function HostSessionView() {
           </div>
         )}
 
-        {activeSession.status === 'reveal' && currentQuestion && (
+        {session.status === 'reveal' && currentQuestion && session.reveal && (
           <div className="grid gap-6">
             <div>
               <p className="text-xs font-mono uppercase tracking-[0.18em] text-[#4cc9f0]">Reveal</p>
@@ -344,8 +251,9 @@ export function HostSessionView() {
 
             <div className="grid sm:grid-cols-2 gap-4">
               {currentQuestion.options.map((option) => {
-                const total = activeSession.participants.length || 1
-                const voteShare = Math.round((distribution[option.label] / total) * 100)
+                const total = participants.length || 1
+                const votes = session.reveal?.distribution[option.label] ?? 0
+                const voteShare = Math.round((votes / total) * 100)
                 const isCorrect = option.label === currentQuestion.correct_answer
                 return (
                   <div
@@ -356,7 +264,7 @@ export function HostSessionView() {
                   >
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-mono uppercase tracking-[0.18em]">{option.label}</p>
-                      <p className="text-sm font-semibold">{distribution[option.label]} votes</p>
+                      <p className="text-sm font-semibold">{votes} votes</p>
                     </div>
                     <p className="mt-3 text-xl font-semibold">{option.text}</p>
                     <div className="mt-5 h-3 rounded-full bg-white/10 overflow-hidden">
@@ -369,29 +277,39 @@ export function HostSessionView() {
 
             <div className="rounded-[28px] border border-white/10 bg-white/5 p-6">
               <p className="text-xs font-mono uppercase tracking-[0.18em] text-[#4cc9f0]">{copy.explanationLabel}</p>
-              <p className="mt-3 text-lg text-white/85">{currentQuestion.explanation}</p>
+              <p className="mt-3 text-lg text-white/85">{session.reveal.explanation}</p>
             </div>
 
             <div className="flex flex-wrap justify-end gap-3">
               <button
                 type="button"
-                onClick={showLeaderboard}
-                className="px-5 py-3 rounded-2xl border border-white/20 text-xs font-mono uppercase tracking-widest"
+                onClick={() => runAction(async () => {
+                  await setSessionLeaderboard(session.id)
+                })}
+                disabled={isMutating}
+                className="px-5 py-3 rounded-2xl border border-white/20 text-xs font-mono uppercase tracking-widest disabled:opacity-60"
               >
                 {copy.showLeaderboard}
               </button>
               <button
                 type="button"
-                onClick={nextQuestion}
-                className="px-5 py-3 rounded-2xl bg-[#2563eb] text-white text-xs font-mono uppercase tracking-widest"
+                onClick={() => runAction(async () => {
+                  if (session.currentQuestionIndex >= quiz.questions.length - 1) {
+                    await finishSession(session.id)
+                  } else {
+                    await startSessionQuestion(session.id, session.currentQuestionIndex + 1)
+                  }
+                })}
+                disabled={isMutating}
+                className="px-5 py-3 rounded-2xl bg-[#2563eb] text-white text-xs font-mono uppercase tracking-widest disabled:opacity-60"
               >
-                {copy.nextQuestion}
+                {session.currentQuestionIndex >= quiz.questions.length - 1 ? copy.finishQuiz : copy.nextQuestion}
               </button>
             </div>
           </div>
         )}
 
-        {activeSession.status === 'leaderboard' && (
+        {session.status === 'leaderboard' && (
           <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 sm:p-8">
             <p className="text-xs font-mono uppercase tracking-[0.18em] text-[#4cc9f0]">{copy.showLeaderboard}</p>
             <div className="mt-6 grid gap-3">
@@ -408,19 +326,26 @@ export function HostSessionView() {
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
-                onClick={nextQuestion}
-                className="px-5 py-3 rounded-2xl bg-[#2563eb] text-white text-xs font-mono uppercase tracking-widest"
+                onClick={() => runAction(async () => {
+                  if (session.currentQuestionIndex >= quiz.questions.length - 1) {
+                    await finishSession(session.id)
+                  } else {
+                    await startSessionQuestion(session.id, session.currentQuestionIndex + 1)
+                  }
+                })}
+                disabled={isMutating}
+                className="px-5 py-3 rounded-2xl bg-[#2563eb] text-white text-xs font-mono uppercase tracking-widest disabled:opacity-60"
               >
-                {copy.nextQuestion}
+                {session.currentQuestionIndex >= quiz.questions.length - 1 ? copy.finishQuiz : copy.nextQuestion}
               </button>
             </div>
           </div>
         )}
 
-        {activeSession.status === 'finished' && (
+        {session.status === 'finished' && (
           <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 sm:p-8">
             <p className="text-xs font-mono uppercase tracking-[0.18em] text-[#4cc9f0]">Finished</p>
-            <h2 className="mt-2 text-3xl sm:text-5xl font-semibold">{activeSession.quizTitle}</h2>
+            <h2 className="mt-2 text-3xl sm:text-5xl font-semibold">{session.quizTitle}</h2>
             <div className="mt-6 grid gap-3">
               {sortedParticipants.map((participant, index) => (
                 <div key={participant.id} className="rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 flex items-center justify-between gap-4">
@@ -432,28 +357,11 @@ export function HostSessionView() {
                 </div>
               ))}
             </div>
-            <div className="mt-6 flex flex-wrap justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => updateActiveSession({
-                  status: 'lobby' as QuizSessionStatus,
-                  currentQuestionIndex: 0,
-                  questionStartedAt: null,
-                  participants: activeSession.participants.map((participant) => ({ ...participant, score: 0 })),
-                })}
-                className="px-5 py-3 rounded-2xl border border-white/20 text-xs font-mono uppercase tracking-widest"
-              >
-                {copy.lobby}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveView('quizbuilder')}
-                className="px-5 py-3 rounded-2xl bg-[#2563eb] text-white text-xs font-mono uppercase tracking-widest"
-              >
-                {copy.backToBuilder}
-              </button>
-            </div>
           </div>
+        )}
+
+        {errorMessage && (
+          <p className="mt-4 text-sm text-[#fca5a5]">{errorMessage}</p>
         )}
       </div>
     </section>
