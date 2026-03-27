@@ -5,13 +5,13 @@ import type { DictionaryEntry, ReaderSettings } from '../types/dictionary'
 interface AppStore {
   pdfFile: File | null
   selectedWord: string | null
-  selectedLanguage: 'en' | 'de' | 'auto'
+  selectedLanguage: 'en' | 'de' | 'fr' | 'auto'
   dictionaryEntry: DictionaryEntry | null
   isLoading: boolean
   settings: ReaderSettings
   setPdfFile: (file: File | null) => void
   setSelectedWord: (word: string | null) => void
-  setSelectedLanguage: (lang: 'en' | 'de' | 'auto') => void
+  setSelectedLanguage: (lang: 'en' | 'de' | 'fr' | 'auto') => void
   setDictionaryEntry: (entry: DictionaryEntry | null) => void
   setIsLoading: (loading: boolean) => void
   updateSettings: (settings: Partial<ReaderSettings>) => void
@@ -36,7 +36,7 @@ export const useAppStore = create<AppStore>()(
       settings: defaultSettings,
       setPdfFile: (file) => set({ pdfFile: file }),
       setSelectedWord: (word) => set({ selectedWord: word }),
-      setSelectedLanguage: (lang) => set({ selectedLanguage: lang }),
+      setSelectedLanguage: (lang: 'en' | 'de' | 'fr' | 'auto') => set({ selectedLanguage: lang }),
       setDictionaryEntry: (entry) => set({ dictionaryEntry: entry }),
       setIsLoading: (loading) => set({ isLoading: loading }),
       updateSettings: (partial) =>

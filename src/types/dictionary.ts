@@ -22,7 +22,7 @@ export interface DictionaryEntry {
   phonetics: Phonetic[]
   meanings: Meaning[]
   etymology?: string
-  language: 'en' | 'de'
+  language: 'en' | 'de' | 'fr'
   // German-specific
   genus?: string
   plural?: string

@@ -2,16 +2,23 @@ import { useCallback } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import type { DictionaryEntry, Meaning } from '../types/dictionary'
 
-const GERMAN_PATTERN = /[äöüÄÖÜß]|(ung|heit|keit|schaft|lich|isch|ig|en|er|es|em)\b/
+// Only use unambiguous script/character signals for detection
+const GERMAN_CHARS = /[äöüÄÖÜß]/
+const FRENCH_CHARS = /[éèêëàâîïôùûüçœæÉÈÊËÀÂÎÏÔÙÛÜÇŒÆ]/
 
-function detectLanguage(word: string, override: 'en' | 'de' | 'auto'): 'en' | 'de' {
+type Lang = 'en' | 'de' | 'fr'
+
+function detectLanguage(word: string, override: 'en' | 'de' | 'fr' | 'auto'): Lang {
   if (override !== 'auto') return override
-  return GERMAN_PATTERN.test(word) ? 'de' : 'en'
+  if (GERMAN_CHARS.test(word)) return 'de'
+  if (FRENCH_CHARS.test(word)) return 'fr'
+  return 'en'
 }
 
-async function fetchEnglish(word: string): Promise<DictionaryEntry | null> {
+// Free Dictionary API supports: en, fr, de, es, it, ja, ko, ru, ar, tr, hi, pt-BR
+async function fetchFromFreeDict(word: string, lang: Lang): Promise<DictionaryEntry | null> {
   const res = await fetch(
-    `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`
+    `https://api.dictionaryapi.dev/api/v2/entries/${lang}/${encodeURIComponent(word)}`
   )
   if (!res.ok) return null
   const data = await res.json()
@@ -22,19 +29,21 @@ async function fetchEnglish(word: string): Promise<DictionaryEntry | null> {
     phonetics: entry.phonetics ?? [],
     meanings: entry.meanings ?? [],
     etymology: undefined,
-    language: 'en',
+    language: lang,
   }
 }
 
 async function fetchGerman(word: string): Promise<DictionaryEntry | null> {
-  // Use Wiktionary REST API (English Wiktionary, German section)
+  // Try Free Dictionary API first (supports 'de')
+  const fromFreeDict = await fetchFromFreeDict(word, 'de')
+  if (fromFreeDict) return fromFreeDict
+
+  // Fallback: Wiktionary REST API
   const res = await fetch(
     `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`
   )
   if (!res.ok) return null
   const data = await res.json()
-
-  // Try to find German definitions
   const deDefs = data.de
   if (!deDefs || deDefs.length === 0) return null
 
@@ -50,12 +59,7 @@ async function fetchGerman(word: string): Promise<DictionaryEntry | null> {
     antonyms: [],
   }))
 
-  return {
-    word,
-    phonetics: [],
-    meanings,
-    language: 'de',
-  }
+  return { word, phonetics: [], meanings, language: 'de' }
 }
 
 export function useDictionaryLookup() {
@@ -68,7 +72,15 @@ export function useDictionaryLookup() {
       setDictionaryEntry(null)
 
       try {
-        const entry = lang === 'en' ? await fetchEnglish(word) : await fetchGerman(word)
+        let entry: DictionaryEntry | null = null
+
+        if (lang === 'de') {
+          entry = await fetchGerman(word)
+        } else {
+          // en and fr both use Free Dictionary API
+          entry = await fetchFromFreeDict(word, lang)
+        }
+
         setDictionaryEntry(entry)
       } catch {
         setDictionaryEntry(null)

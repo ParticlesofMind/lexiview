@@ -90,13 +90,14 @@ export function SettingsBar() {
             <select
               value={selectedLanguage}
               onChange={(e) =>
-                setSelectedLanguage(e.target.value as 'en' | 'de' | 'auto')
+                setSelectedLanguage(e.target.value as 'en' | 'de' | 'fr' | 'auto')
               }
               className="border border-[#0f0f0f] dark:border-[#f5f5f0] bg-transparent px-1 py-0.5"
             >
               <option value="auto">Auto</option>
               <option value="en">EN</option>
               <option value="de">DE</option>
+              <option value="fr">FR</option>
             </select>
           </label>
 
