@@ -1,9 +1,11 @@
 import { useAppStore } from '../store/useAppStore'
 import { WordEntry } from './WordEntry'
+import { getUiCopy } from '../lib/i18n'
 
 export function DictionaryPanel() {
   const {
     selectedWord,
+    selectedLanguage,
     dictionaryEntry,
     isLoading,
     savedWords,
@@ -12,18 +14,19 @@ export function DictionaryPanel() {
     setSelectedWord,
     setDictionaryEntry,
   } = useAppStore()
+  const copy = getUiCopy(selectedLanguage)
 
   if (!selectedWord) {
     return (
       <div className="flex flex-col h-full bg-[#f5f5f0] dark:bg-[#0f0f0f] px-6 py-5 overflow-y-auto">
         <p className="text-[10px] font-mono uppercase tracking-widest opacity-30 dark:text-[#f5f5f0] text-center mb-6">
-          Double-click or select a word<br />to look it up
+          {copy.lookupHint}
         </p>
 
         {savedWords.length > 0 && (
           <div className="mt-auto">
             <p className="text-[10px] font-mono uppercase tracking-widest opacity-40 dark:text-[#f5f5f0] mb-2">
-              Saved words ({savedWords.length})
+              {copy.savedWords} ({savedWords.length})
             </p>
             <div className="space-y-1">
               {savedWords.map((saved) => (
@@ -45,7 +48,7 @@ export function DictionaryPanel() {
                     onClick={() => removeSavedWord(saved.word, saved.language)}
                     className="text-[10px] font-mono uppercase opacity-50 hover:opacity-100 dark:text-[#f5f5f0]"
                   >
-                    remove
+                    {copy.remove}
                   </button>
                 </div>
               ))}
@@ -63,7 +66,7 @@ export function DictionaryPanel() {
           <div className="flex items-center gap-2 mb-4">
             <div className="w-2 h-2 bg-[#2563eb] animate-pulse" />
             <span className="text-[10px] font-mono uppercase tracking-widest opacity-50 dark:text-[#f5f5f0]">
-              Looking up "{selectedWord}"…
+              {copy.lookingUp} "{selectedWord}"...
             </span>
           </div>
         )}
@@ -71,7 +74,7 @@ export function DictionaryPanel() {
         {!isLoading && !dictionaryEntry && (
           <div>
             <p className="text-lg font-bold text-[#0f0f0f] dark:text-[#f5f5f0] mb-2">{selectedWord}</p>
-            <p className="text-xs opacity-40 font-mono dark:text-[#f5f5f0]">No entry found.</p>
+            <p className="text-xs opacity-40 font-mono dark:text-[#f5f5f0]">{copy.noEntryFound}</p>
           </div>
         )}
 
@@ -82,7 +85,7 @@ export function DictionaryPanel() {
                 onClick={() => saveWord(dictionaryEntry)}
                 className="text-[10px] font-mono uppercase tracking-widest border border-[#2563eb] text-[#2563eb] px-2 py-1 hover:bg-[#2563eb] hover:text-white transition-colors"
               >
-                Save word
+                {copy.saveWord}
               </button>
             </div>
             <WordEntry entry={dictionaryEntry} />
@@ -92,7 +95,7 @@ export function DictionaryPanel() {
         {savedWords.length > 0 && (
           <div className="mt-8 border-t border-[#0f0f0f]/10 dark:border-[#f5f5f0]/10 pt-4">
             <p className="text-[10px] font-mono uppercase tracking-widest opacity-40 dark:text-[#f5f5f0] mb-2">
-              Saved words ({savedWords.length})
+              {copy.savedWords} ({savedWords.length})
             </p>
             <div className="space-y-1">
               {savedWords.map((saved) => (
@@ -114,7 +117,7 @@ export function DictionaryPanel() {
                     onClick={() => removeSavedWord(saved.word, saved.language)}
                     className="text-[10px] font-mono uppercase opacity-50 hover:opacity-100 dark:text-[#f5f5f0]"
                   >
-                    remove
+                    {copy.remove}
                   </button>
                 </div>
               ))}

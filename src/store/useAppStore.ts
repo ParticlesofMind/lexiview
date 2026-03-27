@@ -1,6 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { DictionaryEntry, ReaderSettings, SavedWord } from '../types/dictionary'
+import type {
+  AppView,
+  DictionaryEntry,
+  ReaderSettings,
+  SavedWord,
+  UserProfile,
+} from '../types/dictionary'
 
 interface AppStore {
   pdfFile: File | null
@@ -10,6 +16,8 @@ interface AppStore {
   savedWords: SavedWord[]
   isLoading: boolean
   settings: ReaderSettings
+  activeView: AppView
+  currentUser: UserProfile | null
   setPdfFile: (file: File | null) => void
   setSelectedWord: (word: string | null) => void
   setSelectedLanguage: (lang: 'en' | 'de' | 'fr' | 'auto') => void
@@ -18,6 +26,15 @@ interface AppStore {
   removeSavedWord: (word: string, language: 'en' | 'de' | 'fr') => void
   setIsLoading: (loading: boolean) => void
   updateSettings: (settings: Partial<ReaderSettings>) => void
+  setActiveView: (view: AppView) => void
+  signInLocally: (username: string) => void
+  signOutLocally: () => void
+}
+
+function deriveReadingLevel(savedWordsCount: number): UserProfile['readingLevel'] {
+  if (savedWordsCount >= 40) return 'advanced'
+  if (savedWordsCount >= 15) return 'intermediate'
+  return 'beginner'
 }
 
 const defaultSettings: ReaderSettings = {
@@ -40,6 +57,8 @@ export const useAppStore = create<AppStore>()(
       savedWords: [],
       isLoading: false,
       settings: defaultSettings,
+      activeView: 'dashboard',
+      currentUser: null,
       setPdfFile: (file) => set({ pdfFile: file }),
       setSelectedWord: (word) => set({ selectedWord: word }),
       setSelectedLanguage: (lang: 'en' | 'de' | 'fr' | 'auto') => set({ selectedLanguage: lang }),
@@ -54,28 +73,63 @@ export const useAppStore = create<AppStore>()(
 
           if (alreadySaved) return state
 
+          const nextSavedWords = [
+            {
+              word: entry.word,
+              language: entry.language,
+              savedAt: new Date().toISOString(),
+              entry,
+            },
+            ...state.savedWords,
+          ]
+
           return {
-            savedWords: [
-              {
-                word: entry.word,
-                language: entry.language,
-                savedAt: new Date().toISOString(),
-                entry,
-              },
-              ...state.savedWords,
-            ],
+            savedWords: nextSavedWords,
+            currentUser: state.currentUser
+              ? {
+                  ...state.currentUser,
+                  readingLevel: deriveReadingLevel(nextSavedWords.length),
+                }
+              : null,
           }
         }),
       removeSavedWord: (word, language) =>
-        set((state) => ({
-          savedWords: state.savedWords.filter(
+        set((state) => {
+          const nextSavedWords = state.savedWords.filter(
             (saved) =>
               !(saved.word.toLowerCase() === word.toLowerCase() && saved.language === language)
-          ),
-        })),
+          )
+
+          return {
+            savedWords: nextSavedWords,
+            currentUser: state.currentUser
+              ? {
+                  ...state.currentUser,
+                  readingLevel: deriveReadingLevel(nextSavedWords.length),
+                }
+              : null,
+          }
+        }),
       setIsLoading: (loading) => set({ isLoading: loading }),
       updateSettings: (partial) =>
         set((state) => ({ settings: { ...state.settings, ...partial } })),
+      setActiveView: (view) => set({ activeView: view }),
+      signInLocally: (username) =>
+        set((state) => ({
+          currentUser: {
+            username: username.trim(),
+            joinedAt: new Date().toISOString(),
+            readingLevel: deriveReadingLevel(state.savedWords.length),
+          },
+          activeView: 'dashboard',
+        })),
+      signOutLocally: () =>
+        set({
+          currentUser: null,
+          activeView: 'dashboard',
+          selectedWord: null,
+          dictionaryEntry: null,
+        }),
     }),
     {
       name: 'lexiview-settings',
@@ -85,6 +139,8 @@ export const useAppStore = create<AppStore>()(
         selectedWord: state.selectedWord,
         dictionaryEntry: state.dictionaryEntry,
         savedWords: state.savedWords,
+        currentUser: state.currentUser,
+        activeView: state.activeView,
       }),
     }
   )

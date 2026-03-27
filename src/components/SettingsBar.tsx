@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
+import { getUiCopy } from '../lib/i18n'
 
 export function SettingsBar() {
   const [expanded, setExpanded] = useState(false)
   const { settings, selectedLanguage, updateSettings, setSelectedLanguage } = useAppStore()
+  const copy = getUiCopy(selectedLanguage)
 
   const fontFamilyMap = {
     serif: '"Georgia", serif',
@@ -18,7 +20,7 @@ export function SettingsBar() {
         className="w-full flex items-center justify-between px-4 py-2 text-xs font-mono uppercase tracking-widest text-[#0f0f0f] dark:text-[#f5f5f0] hover:bg-[#e8e8e0] dark:hover:bg-[#1a1a1a] transition-colors"
       >
         <span>LexiView</span>
-        <span className="text-[10px]">{expanded ? '▲ Settings' : '▼ Settings'}</span>
+        <span className="text-[10px]">{expanded ? `▲ ${copy.collapseSettings}` : `▼ ${copy.expandSettings}`}</span>
       </button>
 
       <div
@@ -28,7 +30,7 @@ export function SettingsBar() {
         <div className="px-4 py-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-4 text-xs dark:text-[#f5f5f0]">
           {/* Font Size */}
           <label className="flex flex-col gap-1">
-            <span className="font-mono uppercase tracking-wide opacity-60">Font size</span>
+            <span className="font-mono uppercase tracking-wide opacity-60">{copy.fontSize}</span>
             <input
               type="range"
               min={12}
@@ -42,7 +44,7 @@ export function SettingsBar() {
 
           {/* Line Height */}
           <label className="flex flex-col gap-1">
-            <span className="font-mono uppercase tracking-wide opacity-60">Line height</span>
+            <span className="font-mono uppercase tracking-wide opacity-60">{copy.lineHeight}</span>
             <input
               type="range"
               min={120}
@@ -56,7 +58,7 @@ export function SettingsBar() {
 
           {/* Letter Spacing */}
           <label className="flex flex-col gap-1">
-            <span className="font-mono uppercase tracking-wide opacity-60">Letter spacing</span>
+            <span className="font-mono uppercase tracking-wide opacity-60">{copy.letterSpacing}</span>
             <input
               type="range"
               min={-10}
@@ -70,7 +72,7 @@ export function SettingsBar() {
 
           {/* Font Family */}
           <label className="flex flex-col gap-1">
-            <span className="font-mono uppercase tracking-wide opacity-60">Font</span>
+            <span className="font-mono uppercase tracking-wide opacity-60">{copy.font}</span>
             <select
               value={settings.fontFamily}
               onChange={(e) =>
@@ -86,15 +88,14 @@ export function SettingsBar() {
 
           {/* Language */}
           <label className="flex flex-col gap-1">
-            <span className="font-mono uppercase tracking-wide opacity-60">Language</span>
+            <span className="font-mono uppercase tracking-wide opacity-60">{copy.language}</span>
             <select
-              value={selectedLanguage}
+              value={selectedLanguage === 'auto' ? 'en' : selectedLanguage}
               onChange={(e) =>
-                setSelectedLanguage(e.target.value as 'en' | 'de' | 'fr' | 'auto')
+                setSelectedLanguage(e.target.value as 'en' | 'de' | 'fr')
               }
               className="border border-[#0f0f0f] dark:border-[#f5f5f0] bg-transparent px-1 py-0.5"
             >
-              <option value="auto">Auto</option>
               <option value="en">EN</option>
               <option value="de">DE</option>
               <option value="fr">FR</option>
@@ -103,20 +104,20 @@ export function SettingsBar() {
 
           {/* Theme */}
           <label className="flex flex-col gap-1">
-            <span className="font-mono uppercase tracking-wide opacity-60">Theme</span>
+            <span className="font-mono uppercase tracking-wide opacity-60">{copy.theme}</span>
             <button
               onClick={() =>
                 updateSettings({ theme: settings.theme === 'light' ? 'dark' : 'light' })
               }
               className="border border-[#0f0f0f] dark:border-[#f5f5f0] px-2 py-0.5 text-left hover:bg-[#2563eb] hover:text-white hover:border-[#2563eb] transition-colors"
             >
-              {settings.theme === 'light' ? 'Light' : 'Dark'}
+              {settings.theme === 'light' ? copy.light : copy.dark}
             </button>
           </label>
 
           {/* PDF Zoom */}
           <label className="flex flex-col gap-1">
-            <span className="font-mono uppercase tracking-wide opacity-60">PDF zoom</span>
+            <span className="font-mono uppercase tracking-wide opacity-60">{copy.pdfZoom}</span>
             <input
               type="range"
               min={80}
@@ -130,7 +131,7 @@ export function SettingsBar() {
 
           {/* PDF Text Opacity */}
           <label className="flex flex-col gap-1">
-            <span className="font-mono uppercase tracking-wide opacity-60">Text opacity</span>
+            <span className="font-mono uppercase tracking-wide opacity-60">{copy.textOpacity}</span>
             <input
               type="range"
               min={40}

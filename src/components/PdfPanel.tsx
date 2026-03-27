@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { usePdfTextLayer } from '../hooks/usePdfTextLayer'
 import { useDictionaryLookup } from '../hooks/useDictionaryLookup'
+import { getUiCopy } from '../lib/i18n'
 import {
   clearPersistedPdf,
   loadPersistedPdf,
@@ -27,9 +28,10 @@ function isLikelyPdf(file: File): boolean {
 }
 
 export function PdfPanel() {
-  const { pdfFile, setPdfFile, selectedWord, setSelectedWord, settings } = useAppStore()
+  const { pdfFile, setPdfFile, selectedWord, setSelectedWord, settings, selectedLanguage } = useAppStore()
   const { pages, isProcessing, loadPdf } = usePdfTextLayer()
   const { lookup } = useDictionaryLookup()
+  const copy = getUiCopy(selectedLanguage)
   const dropRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [activeWord, setActiveWord] = useState<string | null>(null)
@@ -159,11 +161,11 @@ export function PdfPanel() {
             </svg>
           </div>
           <div className="text-center">
-            <p className="font-mono text-sm uppercase tracking-widest dark:text-[#f5f5f0]">Drop PDF here</p>
-            <p className="text-xs opacity-50 mt-1 dark:text-[#f5f5f0]">or click to browse</p>
+            <p className="font-mono text-sm uppercase tracking-widest dark:text-[#f5f5f0]">{copy.dropPdf}</p>
+            <p className="text-xs opacity-50 mt-1 dark:text-[#f5f5f0]">{copy.clickToBrowse}</p>
             {isRestoringPdf && (
               <p className="text-[10px] font-mono uppercase tracking-widest opacity-40 mt-2 dark:text-[#f5f5f0]">
-                Restoring last PDF...
+                {copy.restoringPdf}
               </p>
             )}
           </div>
@@ -183,14 +185,14 @@ export function PdfPanel() {
           onClick={() => void clearPdf()}
           className="text-[10px] font-mono uppercase tracking-widest border border-[#0f0f0f]/30 dark:border-[#f5f5f0]/30 px-2 py-1 text-[#0f0f0f] dark:text-[#f5f5f0] hover:border-[#2563eb] hover:text-[#2563eb] transition-colors"
         >
-          Clear PDF
+          {copy.clearPdf}
         </button>
       </div>
 
       {isProcessing && (
         <div className="flex items-center justify-center h-full">
           <p className="font-mono text-xs uppercase tracking-widest opacity-50 dark:text-[#f5f5f0] animate-pulse">
-            Parsing PDF…
+            {copy.parsingPdf}
           </p>
         </div>
       )}

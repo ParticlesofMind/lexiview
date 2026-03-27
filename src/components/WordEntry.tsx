@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import type { DictionaryEntry } from '../types/dictionary'
+import { useAppStore } from '../store/useAppStore'
+import { getUiCopy } from '../lib/i18n'
 
 interface Props {
   entry: DictionaryEntry
@@ -7,8 +9,31 @@ interface Props {
 
 export function WordEntry({ entry }: Props) {
   const [etymologyOpen, setEtymologyOpen] = useState(false)
+  const { selectedLanguage } = useAppStore()
+  const copy = getUiCopy(selectedLanguage)
 
   const phonetic = entry.phonetics.find((p) => p.text)?.text
+  const audioUrl = entry.phonetics.find((p) => p.audio)?.audio
+
+  const simplified = (text: string) => {
+    const clean = text.replace(/\s+/g, ' ').trim()
+    const sentence = clean.split(/[.;:]/)[0] ?? clean
+    return sentence.length > 140 ? `${sentence.slice(0, 137)}...` : sentence
+  }
+
+  const playPronunciation = () => {
+    if (audioUrl) {
+      const audio = new Audio(audioUrl)
+      void audio.play()
+      return
+    }
+
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(entry.word)
+      utterance.lang = entry.language === 'de' ? 'de-DE' : entry.language === 'fr' ? 'fr-FR' : 'en-US'
+      window.speechSynthesis.speak(utterance)
+    }
+  }
 
   return (
     <div className="font-[var(--reader-font-family,serif)]">
@@ -26,8 +51,43 @@ export function WordEntry({ entry }: Props) {
       </div>
 
       {/* Phonetics */}
-      {phonetic && (
-        <p className="text-sm text-[#0f0f0f]/60 dark:text-[#f5f5f0]/60 mb-4 font-mono">{phonetic}</p>
+      {(phonetic || audioUrl) && (
+        <div className="mb-4">
+          <p className="text-[10px] font-mono uppercase tracking-widest opacity-50 dark:text-[#f5f5f0] mb-1">
+            {copy.pronunciation}
+          </p>
+          <div className="flex items-center gap-2">
+            {phonetic && <p className="text-sm text-[#0f0f0f]/60 dark:text-[#f5f5f0]/60 font-mono">{phonetic}</p>}
+            <button
+              onClick={playPronunciation}
+              className="text-[10px] font-mono uppercase tracking-widest border border-[#0f0f0f]/25 dark:border-[#f5f5f0]/25 px-2 py-1 text-[#0f0f0f] dark:text-[#f5f5f0] hover:border-[#2563eb] hover:text-[#2563eb] transition-colors"
+            >
+              {copy.playAudio}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {entry.quickMeaning && (
+        <div className="mb-4 border border-[#0f0f0f]/15 dark:border-[#f5f5f0]/20 p-3 bg-[#f8f7f2] dark:bg-[#111]">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-[#2563eb] mb-1">
+            {copy.quickMeaning}
+          </p>
+          <p className="text-sm leading-relaxed text-[#0f0f0f]/80 dark:text-[#f5f5f0]/80">
+            {entry.quickMeaning}
+          </p>
+        </div>
+      )}
+
+      {entry.imageUrl && (
+        <figure className="mb-5 border border-[#0f0f0f]/12 dark:border-[#f5f5f0]/18 bg-[#f8f7f1] dark:bg-[#101010] p-2">
+          <img src={entry.imageUrl} alt={`${copy.imageForWord}: ${entry.word}`} className="w-full h-48 object-cover" loading="lazy" />
+          {entry.imageSource && (
+            <figcaption className="mt-1 text-[10px] font-mono uppercase tracking-widest opacity-45 dark:text-[#f5f5f0]">
+              {copy.imageForWord}: {entry.imageSource}
+            </figcaption>
+          )}
+        </figure>
       )}
 
       {/* Genus / Plural (German) */}
@@ -38,14 +98,14 @@ export function WordEntry({ entry }: Props) {
       )}
 
       {/* Meanings */}
-      {entry.meanings.map((meaning, mi) => (
+      {entry.meanings.slice(0, 2).map((meaning, mi) => (
         <div key={mi} className="mb-5">
           <p className="text-xs font-mono uppercase tracking-widest text-[#2563eb] mb-2">
             {meaning.partOfSpeech}
           </p>
 
           <ol className="space-y-3">
-            {meaning.definitions.map((def, di) => (
+            {meaning.definitions.slice(0, 2).map((def, di) => (
               <li key={di} className="flex gap-2">
                 <span className="text-xs font-mono opacity-40 mt-0.5 shrink-0 dark:text-[#f5f5f0]">
                   {di + 1}.
@@ -59,11 +119,11 @@ export function WordEntry({ entry }: Props) {
                       letterSpacing: 'var(--reader-letter-spacing, 0px)',
                     }}
                   >
-                    {def.definition}
+                    {simplified(def.definition)}
                   </p>
                   {def.example && (
                     <p className="text-sm italic opacity-50 mt-1 dark:text-[#f5f5f0]">
-                      "{def.example}"
+                      "{simplified(def.example)}"
                     </p>
                   )}
                 </div>
@@ -109,7 +169,7 @@ export function WordEntry({ entry }: Props) {
             onClick={() => setEtymologyOpen((v) => !v)}
             className="text-[10px] font-mono uppercase tracking-widest opacity-50 hover:opacity-100 dark:text-[#f5f5f0] transition-opacity"
           >
-            {etymologyOpen ? '▲' : '▼'} Etymology
+            {etymologyOpen ? '▲' : '▼'} {copy.etymology}
           </button>
           {etymologyOpen && (
             <p className="mt-2 text-xs leading-relaxed opacity-60 dark:text-[#f5f5f0]">

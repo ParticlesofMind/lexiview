@@ -8,6 +8,37 @@ const FRENCH_CHARS = /[éèêëàâîïôùûüçœæÉÈÊËÀÂÎÏÔÙÛÜÇ�
 
 type Lang = 'en' | 'de' | 'fr'
 
+function simplifyText(text: string): string {
+  const clean = text.replace(/\s+/g, ' ').trim()
+  const sentence = clean.split(/[.;:]/)[0] ?? clean
+  return sentence.length > 140 ? `${sentence.slice(0, 137)}...` : sentence
+}
+
+function isLikelyNoun(partOfSpeech: string): boolean {
+  const value = partOfSpeech.toLowerCase()
+  return (
+    value.includes('noun') ||
+    value.includes('substantiv') ||
+    value.includes('nom') ||
+    value.includes('n.')
+  )
+}
+
+async function fetchWikipediaImage(word: string, lang: Lang) {
+  const endpoint = `https://${lang}.wikipedia.org/w/api.php?action=query&origin=*&format=json&prop=pageimages&piprop=thumbnail&pithumbsize=640&titles=${encodeURIComponent(word)}`
+  const res = await fetch(endpoint)
+  if (!res.ok) return { imageUrl: undefined, imageSource: undefined }
+  const data = await res.json()
+  const pages = data?.query?.pages
+  if (!pages) return { imageUrl: undefined, imageSource: undefined }
+  const firstPage = Object.values(pages)[0] as { thumbnail?: { source?: string } } | undefined
+
+  return {
+    imageUrl: firstPage?.thumbnail?.source,
+    imageSource: firstPage?.thumbnail?.source ? 'Wikipedia' : undefined,
+  }
+}
+
 function detectLanguage(word: string, override: 'en' | 'de' | 'fr' | 'auto'): Lang {
   if (override !== 'auto') return override
   if (GERMAN_CHARS.test(word)) return 'de'
@@ -24,10 +55,32 @@ async function fetchFromFreeDict(word: string, lang: Lang): Promise<DictionaryEn
   const data = await res.json()
   if (!Array.isArray(data) || data.length === 0) return null
   const entry = data[0]
+  const meanings = (entry.meanings ?? []).map((meaning: Meaning) => ({
+    ...meaning,
+    definitions: (meaning.definitions ?? []).slice(0, 3).map((def) => ({
+      ...def,
+      definition: simplifyText(def.definition ?? ''),
+      example: def.example ? simplifyText(def.example) : undefined,
+      synonyms: (def.synonyms ?? []).slice(0, 6),
+      antonyms: (def.antonyms ?? []).slice(0, 6),
+    })),
+    synonyms: (meaning.synonyms ?? []).slice(0, 8),
+    antonyms: (meaning.antonyms ?? []).slice(0, 8),
+  }))
+
+  const quickMeaning = meanings[0]?.definitions?.[0]?.definition
+  const shouldFetchImage = meanings.some((meaning: Meaning) =>
+    isLikelyNoun(meaning.partOfSpeech ?? '')
+  )
+  const image = shouldFetchImage ? await fetchWikipediaImage(entry.word ?? word, lang) : undefined
+
   return {
     word: entry.word,
     phonetics: entry.phonetics ?? [],
-    meanings: entry.meanings ?? [],
+    meanings,
+    quickMeaning,
+    imageUrl: image?.imageUrl,
+    imageSource: image?.imageSource,
     etymology: undefined,
     language: lang,
   }
@@ -49,9 +102,9 @@ async function fetchGerman(word: string): Promise<DictionaryEntry | null> {
 
   const meanings: Meaning[] = deDefs.map((def: { partOfSpeech: string; definitions: { definition: string; example?: string }[] }) => ({
     partOfSpeech: def.partOfSpeech ?? '',
-    definitions: (def.definitions ?? []).map((d: { definition: string; example?: string }) => ({
-      definition: d.definition?.replace(/<[^>]+>/g, '') ?? '',
-      example: d.example?.replace(/<[^>]+>/g, ''),
+    definitions: (def.definitions ?? []).slice(0, 3).map((d: { definition: string; example?: string }) => ({
+      definition: simplifyText(d.definition?.replace(/<[^>]+>/g, '') ?? ''),
+      example: d.example ? simplifyText(d.example.replace(/<[^>]+>/g, '')) : undefined,
       synonyms: [],
       antonyms: [],
     })),
@@ -59,7 +112,19 @@ async function fetchGerman(word: string): Promise<DictionaryEntry | null> {
     antonyms: [],
   }))
 
-  return { word, phonetics: [], meanings, language: 'de' }
+  const quickMeaning = meanings[0]?.definitions?.[0]?.definition
+  const shouldFetchImage = meanings.some((meaning) => isLikelyNoun(meaning.partOfSpeech ?? ''))
+  const image = shouldFetchImage ? await fetchWikipediaImage(word, 'de') : undefined
+
+  return {
+    word,
+    phonetics: [],
+    meanings,
+    quickMeaning,
+    imageUrl: image?.imageUrl,
+    imageSource: image?.imageSource,
+    language: 'de',
+  }
 }
 
 export function useDictionaryLookup() {

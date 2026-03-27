@@ -1,0 +1,264 @@
+import type { AppView } from '../types/dictionary'
+
+export type UiLanguage = 'en' | 'de' | 'fr'
+
+type UiCopy = {
+  appName: string
+  dashboard: string
+  reader: string
+  wordBank: string
+  logout: string
+  user: string
+  signInTitle: string
+  signInBody: string
+  usernamePlaceholder: string
+  continueButton: string
+  dashboardTitle: string
+  dashboardSubtitle: string
+  openReader: string
+  openWordBank: string
+  slideReaderTitle: string
+  slideReaderBody: string
+  slideDictionaryTitle: string
+  slideDictionaryBody: string
+  slideRetentionTitle: string
+  slideRetentionBody: string
+  settings: string
+  collapseSettings: string
+  expandSettings: string
+  fontSize: string
+  lineHeight: string
+  letterSpacing: string
+  font: string
+  language: string
+  theme: string
+  light: string
+  dark: string
+  pdfZoom: string
+  textOpacity: string
+  clearPdf: string
+  dropPdf: string
+  clickToBrowse: string
+  restoringPdf: string
+  parsingPdf: string
+  lookupHint: string
+  savedWords: string
+  remove: string
+  saveWord: string
+  noEntryFound: string
+  lookingUp: string
+  pronunciation: string
+  playAudio: string
+  quickMeaning: string
+  imageForWord: string
+  etymology: string
+  levelBeginner: string
+  levelIntermediate: string
+  levelAdvanced: string
+  readerEmptyTitle: string
+  readerEmptyBody: string
+  wordBankEmpty: string
+}
+
+const COPY: Record<UiLanguage, UiCopy> = {
+  en: {
+    appName: 'LexiView',
+    dashboard: 'Dashboard',
+    reader: 'Reader',
+    wordBank: 'Word Bank',
+    logout: 'Log out',
+    user: 'User',
+    signInTitle: 'Welcome to LexiView',
+    signInBody: 'Create a local profile to save your words and reading level on this device.',
+    usernamePlaceholder: 'Choose a username',
+    continueButton: 'Continue',
+    dashboardTitle: 'Read faster, remember better',
+    dashboardSubtitle: 'Tap words in your PDFs, hear pronunciation, see simple definitions, and build your bank.',
+    openReader: 'Open Reader',
+    openWordBank: 'Open Word Bank',
+    slideReaderTitle: 'Reader',
+    slideReaderBody: 'Upload a PDF and double-click any word for instant lookup.',
+    slideDictionaryTitle: 'Smart Dictionary',
+    slideDictionaryBody: 'Focus on English, German, and French with pronunciation and quick meaning.',
+    slideRetentionTitle: 'Word Bank',
+    slideRetentionBody: 'Save words and grow your reading level over time.',
+    settings: 'Settings',
+    collapseSettings: 'Hide settings',
+    expandSettings: 'Show settings',
+    fontSize: 'Font size',
+    lineHeight: 'Line height',
+    letterSpacing: 'Letter spacing',
+    font: 'Font',
+    language: 'Language',
+    theme: 'Theme',
+    light: 'Light',
+    dark: 'Dark',
+    pdfZoom: 'PDF zoom',
+    textOpacity: 'Text opacity',
+    clearPdf: 'Clear PDF',
+    dropPdf: 'Drop PDF here',
+    clickToBrowse: 'or click to browse',
+    restoringPdf: 'Restoring last PDF...',
+    parsingPdf: 'Parsing PDF...',
+    lookupHint: 'Double-click or select a word to look it up',
+    savedWords: 'Saved words',
+    remove: 'Remove',
+    saveWord: 'Save word',
+    noEntryFound: 'No entry found.',
+    lookingUp: 'Looking up',
+    pronunciation: 'Pronunciation',
+    playAudio: 'Play audio',
+    quickMeaning: 'Quick meaning',
+    imageForWord: 'Image',
+    etymology: 'Etymology',
+    levelBeginner: 'Beginner',
+    levelIntermediate: 'Intermediate',
+    levelAdvanced: 'Advanced',
+    readerEmptyTitle: 'Open Reader to start reading',
+    readerEmptyBody: 'Use the top menu and choose Reader.',
+    wordBankEmpty: 'No saved words yet.',
+  },
+  de: {
+    appName: 'LexiView',
+    dashboard: 'Startseite',
+    reader: 'Leser',
+    wordBank: 'Wortbank',
+    logout: 'Abmelden',
+    user: 'Benutzer',
+    signInTitle: 'Willkommen bei LexiView',
+    signInBody: 'Erstelle ein lokales Profil, um Worte und Lesestufe auf diesem Gerat zu speichern.',
+    usernamePlaceholder: 'Benutzernamen wahlen',
+    continueButton: 'Weiter',
+    dashboardTitle: 'Schneller lesen, besser behalten',
+    dashboardSubtitle: 'Tippe Worte in PDFs an, hore Aussprache, sieh einfache Bedeutungen und baue deine Wortbank.',
+    openReader: 'Leser offnen',
+    openWordBank: 'Wortbank offnen',
+    slideReaderTitle: 'Leser',
+    slideReaderBody: 'Lade ein PDF hoch und doppelklicke ein Wort fur sofortige Suche.',
+    slideDictionaryTitle: 'Kluges Worterbuch',
+    slideDictionaryBody: 'Fokus auf Englisch, Deutsch und Franzosisch mit Aussprache und Kurzdefinition.',
+    slideRetentionTitle: 'Wortbank',
+    slideRetentionBody: 'Speichere Worte und steigere deine Lesestufe mit der Zeit.',
+    settings: 'Einstellungen',
+    collapseSettings: 'Einstellungen ausblenden',
+    expandSettings: 'Einstellungen anzeigen',
+    fontSize: 'Schriftgrosse',
+    lineHeight: 'Zeilenhohe',
+    letterSpacing: 'Zeichenabstand',
+    font: 'Schrift',
+    language: 'Sprache',
+    theme: 'Design',
+    light: 'Hell',
+    dark: 'Dunkel',
+    pdfZoom: 'PDF-Zoom',
+    textOpacity: 'Text-Deckkraft',
+    clearPdf: 'PDF leeren',
+    dropPdf: 'PDF hier ablegen',
+    clickToBrowse: 'oder klicken zum Auswahlen',
+    restoringPdf: 'Letztes PDF wird geladen...',
+    parsingPdf: 'PDF wird analysiert...',
+    lookupHint: 'Doppelklick oder Wort markieren fur Suche',
+    savedWords: 'Gespeicherte Worte',
+    remove: 'Entfernen',
+    saveWord: 'Wort speichern',
+    noEntryFound: 'Kein Eintrag gefunden.',
+    lookingUp: 'Suche nach',
+    pronunciation: 'Aussprache',
+    playAudio: 'Audio abspielen',
+    quickMeaning: 'Kurzbedeutung',
+    imageForWord: 'Bild',
+    etymology: 'Etymologie',
+    levelBeginner: 'Anfanger',
+    levelIntermediate: 'Mittelstufe',
+    levelAdvanced: 'Fortgeschritten',
+    readerEmptyTitle: 'Offne den Leser zum Starten',
+    readerEmptyBody: 'Nutze das obere Menu und wahle Leser.',
+    wordBankEmpty: 'Noch keine gespeicherten Worte.',
+  },
+  fr: {
+    appName: 'LexiView',
+    dashboard: 'Tableau de bord',
+    reader: 'Lecteur',
+    wordBank: 'Banque de mots',
+    logout: 'Se deconnecter',
+    user: 'Utilisateur',
+    signInTitle: 'Bienvenue dans LexiView',
+    signInBody: 'Creez un profil local pour sauvegarder vos mots et votre niveau de lecture sur cet appareil.',
+    usernamePlaceholder: 'Choisissez un nom',
+    continueButton: 'Continuer',
+    dashboardTitle: 'Lisez plus vite, retenez mieux',
+    dashboardSubtitle: 'Touchez des mots dans vos PDF, ecoutez la prononciation, voyez des definitions simples, et construisez votre banque.',
+    openReader: 'Ouvrir le lecteur',
+    openWordBank: 'Ouvrir la banque',
+    slideReaderTitle: 'Lecteur',
+    slideReaderBody: 'Importez un PDF et double-cliquez sur un mot pour une recherche immediate.',
+    slideDictionaryTitle: 'Dictionnaire intelligent',
+    slideDictionaryBody: 'Concentre sur anglais, allemand et francais avec prononciation et sens rapide.',
+    slideRetentionTitle: 'Banque de mots',
+    slideRetentionBody: 'Sauvegardez des mots et augmentez votre niveau de lecture.',
+    settings: 'Parametres',
+    collapseSettings: 'Masquer les parametres',
+    expandSettings: 'Afficher les parametres',
+    fontSize: 'Taille de police',
+    lineHeight: 'Hauteur de ligne',
+    letterSpacing: 'Espacement des lettres',
+    font: 'Police',
+    language: 'Langue',
+    theme: 'Theme',
+    light: 'Clair',
+    dark: 'Sombre',
+    pdfZoom: 'Zoom PDF',
+    textOpacity: 'Opacite du texte',
+    clearPdf: 'Effacer le PDF',
+    dropPdf: 'Deposez le PDF ici',
+    clickToBrowse: 'ou cliquez pour parcourir',
+    restoringPdf: 'Restauration du dernier PDF...',
+    parsingPdf: 'Analyse du PDF...',
+    lookupHint: 'Double-cliquez ou selectionnez un mot pour le rechercher',
+    savedWords: 'Mots sauvegardes',
+    remove: 'Retirer',
+    saveWord: 'Sauvegarder le mot',
+    noEntryFound: 'Aucune entree trouvee.',
+    lookingUp: 'Recherche de',
+    pronunciation: 'Prononciation',
+    playAudio: 'Lire audio',
+    quickMeaning: 'Sens rapide',
+    imageForWord: 'Image',
+    etymology: 'Etymologie',
+    levelBeginner: 'Debutant',
+    levelIntermediate: 'Intermediaire',
+    levelAdvanced: 'Avance',
+    readerEmptyTitle: 'Ouvrez le lecteur pour commencer',
+    readerEmptyBody: 'Utilisez le menu du haut et choisissez Lecteur.',
+    wordBankEmpty: 'Aucun mot sauvegarde pour le moment.',
+  },
+}
+
+export function normalizeUiLanguage(value: 'en' | 'de' | 'fr' | 'auto'): UiLanguage {
+  if (value === 'auto') {
+    const browserLang = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : 'en'
+    if (browserLang.startsWith('de')) return 'de'
+    if (browserLang.startsWith('fr')) return 'fr'
+    return 'en'
+  }
+  return value
+}
+
+export function getUiCopy(value: 'en' | 'de' | 'fr' | 'auto') {
+  const lang = normalizeUiLanguage(value)
+  return COPY[lang]
+}
+
+export function levelLabel(level: 'beginner' | 'intermediate' | 'advanced', lang: 'en' | 'de' | 'fr' | 'auto') {
+  const copy = getUiCopy(lang)
+  if (level === 'beginner') return copy.levelBeginner
+  if (level === 'intermediate') return copy.levelIntermediate
+  return copy.levelAdvanced
+}
+
+export function viewLabel(view: AppView, lang: 'en' | 'de' | 'fr' | 'auto') {
+  const copy = getUiCopy(lang)
+  if (view === 'dashboard') return copy.dashboard
+  if (view === 'reader') return copy.reader
+  return copy.wordBank
+}

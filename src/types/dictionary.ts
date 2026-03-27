@@ -23,6 +23,9 @@ export interface DictionaryEntry {
   meanings: Meaning[]
   etymology?: string
   language: 'en' | 'de' | 'fr'
+  quickMeaning?: string
+  imageUrl?: string
+  imageSource?: string
   // German-specific
   genus?: string
   plural?: string
@@ -43,4 +46,12 @@ export interface SavedWord {
   language: 'en' | 'de' | 'fr'
   savedAt: string
   entry: DictionaryEntry
+}
+
+export type AppView = 'dashboard' | 'reader' | 'wordbank'
+
+export interface UserProfile {
+  username: string
+  joinedAt: string
+  readingLevel: 'beginner' | 'intermediate' | 'advanced'
 }
