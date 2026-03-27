@@ -59,6 +59,12 @@ export function DashboardView() {
             >
               {copy.openWordBank}
             </button>
+            <button
+              onClick={() => setActiveView('quizbuilder')}
+              className="px-4 py-2 border border-[#0f0f0f]/25 dark:border-[#f5f5f0]/25 text-xs font-mono uppercase tracking-widest text-[#0f0f0f] dark:text-[#f5f5f0] hover:border-[#2563eb] hover:text-[#2563eb] transition-colors"
+            >
+              {copy.openQuizBuilder}
+            </button>
             <span className="ml-auto self-center text-[10px] font-mono uppercase tracking-[0.2em] opacity-50 dark:text-[#f5f5f0]">
               {levelLabel(currentUser?.readingLevel ?? 'beginner', selectedLanguage)}
             </span>

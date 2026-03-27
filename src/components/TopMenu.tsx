@@ -69,6 +69,9 @@ export function TopMenu() {
           <MenuButton active={activeView === 'wordbank'} onClick={() => onNavigate('wordbank')}>
             {copy.wordBank}
           </MenuButton>
+          <MenuButton active={activeView === 'quizbuilder'} onClick={() => onNavigate('quizbuilder')}>
+            {copy.quizBuilder}
+          </MenuButton>
         </nav>
 
         <div className="relative">

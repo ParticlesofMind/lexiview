@@ -7,6 +7,7 @@ type UiCopy = {
   dashboard: string
   reader: string
   wordBank: string
+  quizBuilder: string
   logout: string
   user: string
   signInTitle: string
@@ -17,6 +18,7 @@ type UiCopy = {
   dashboardSubtitle: string
   openReader: string
   openWordBank: string
+  openQuizBuilder: string
   slideReaderTitle: string
   slideReaderBody: string
   slideDictionaryTitle: string
@@ -71,6 +73,26 @@ type UiCopy = {
   tryAgain: string
   reveal: string
   generalSet: string
+  quizBuilderTitle: string
+  quizBuilderSubtitle: string
+  generatorOptions: string
+  quizLanguage: string
+  cefrLevel: string
+  topic: string
+  topicPlaceholder: string
+  quizType: string
+  numberOfQuestions: string
+  optionsPerQuestion: string
+  timePerQuestion: string
+  titleOptional: string
+  titlePlaceholder: string
+  generateQuiz: string
+  vocabulary: string
+  grammar: string
+  comprehension: string
+  translation: string
+  fillInTheBlank: string
+  errorDetection: string
 }
 
 const COPY: Record<UiLanguage, UiCopy> = {
@@ -79,6 +101,7 @@ const COPY: Record<UiLanguage, UiCopy> = {
     dashboard: 'Dashboard',
     reader: 'Reader',
     wordBank: 'Word Bank',
+    quizBuilder: 'Quiz Builder',
     logout: 'Log out',
     user: 'User',
     signInTitle: 'Welcome to LexiView',
@@ -89,6 +112,7 @@ const COPY: Record<UiLanguage, UiCopy> = {
     dashboardSubtitle: 'Tap words in your PDFs, hear pronunciation, see simple definitions, and build your bank.',
     openReader: 'Open Reader',
     openWordBank: 'Open Word Bank',
+    openQuizBuilder: 'Open Quiz Builder',
     slideReaderTitle: 'Reader',
     slideReaderBody: 'Upload a PDF and double-click any word for instant lookup.',
     slideDictionaryTitle: 'Smart Dictionary',
@@ -143,12 +167,33 @@ const COPY: Record<UiLanguage, UiCopy> = {
     tryAgain: 'Try again',
     reveal: 'Reveal',
     generalSet: 'General Set',
+    quizBuilderTitle: 'AI Quiz Generator',
+    quizBuilderSubtitle: 'Set language, level, topic, and timing before generating your classroom quiz.',
+    generatorOptions: 'Generator options',
+    quizLanguage: 'Language',
+    cefrLevel: 'CEFR level',
+    topic: 'Topic',
+    topicPlaceholder: 'Cafe vocabulary, subjunctive mood, climate change debate...',
+    quizType: 'Quiz type',
+    numberOfQuestions: 'Number of questions',
+    optionsPerQuestion: 'Options per question',
+    timePerQuestion: 'Time per question',
+    titleOptional: 'Title (optional)',
+    titlePlaceholder: 'Leave blank to auto-generate',
+    generateQuiz: 'Generate Quiz ->',
+    vocabulary: 'Vocabulary',
+    grammar: 'Grammar',
+    comprehension: 'Comprehension',
+    translation: 'Translation',
+    fillInTheBlank: 'Fill in the blank',
+    errorDetection: 'Error detection',
   },
   de: {
     appName: 'LexiView',
     dashboard: 'Startseite',
     reader: 'Leser',
     wordBank: 'Wortbank',
+    quizBuilder: 'Quiz-Builder',
     logout: 'Abmelden',
     user: 'Benutzer',
     signInTitle: 'Willkommen bei LexiView',
@@ -159,6 +204,7 @@ const COPY: Record<UiLanguage, UiCopy> = {
     dashboardSubtitle: 'Tippe Worte in PDFs an, hore Aussprache, sieh einfache Bedeutungen und baue deine Wortbank.',
     openReader: 'Leser offnen',
     openWordBank: 'Wortbank offnen',
+    openQuizBuilder: 'Quiz-Builder offnen',
     slideReaderTitle: 'Leser',
     slideReaderBody: 'Lade ein PDF hoch und doppelklicke ein Wort fur sofortige Suche.',
     slideDictionaryTitle: 'Kluges Worterbuch',
@@ -213,12 +259,33 @@ const COPY: Record<UiLanguage, UiCopy> = {
     tryAgain: 'Nochmal',
     reveal: 'Auflosen',
     generalSet: 'Allgemeines Set',
+    quizBuilderTitle: 'KI Quiz Generator',
+    quizBuilderSubtitle: 'Lege Sprache, Niveau, Thema und Zeit fest, bevor du dein Klassenquiz erzeugst.',
+    generatorOptions: 'Generator Optionen',
+    quizLanguage: 'Sprache',
+    cefrLevel: 'CEFR Niveau',
+    topic: 'Thema',
+    topicPlaceholder: 'Cafe Wortschatz, Konjunktiv, Klimadebatte...',
+    quizType: 'Quiztyp',
+    numberOfQuestions: 'Anzahl Fragen',
+    optionsPerQuestion: 'Optionen pro Frage',
+    timePerQuestion: 'Zeit pro Frage',
+    titleOptional: 'Titel (optional)',
+    titlePlaceholder: 'Leer lassen fur automatische Erzeugung',
+    generateQuiz: 'Quiz erzeugen ->',
+    vocabulary: 'Wortschatz',
+    grammar: 'Grammatik',
+    comprehension: 'Verstandnis',
+    translation: 'Ubersetzung',
+    fillInTheBlank: 'Luckentext',
+    errorDetection: 'Fehler finden',
   },
   fr: {
     appName: 'LexiView',
     dashboard: 'Tableau de bord',
     reader: 'Lecteur',
     wordBank: 'Banque de mots',
+    quizBuilder: 'Generateur',
     logout: 'Se deconnecter',
     user: 'Utilisateur',
     signInTitle: 'Bienvenue dans LexiView',
@@ -229,6 +296,7 @@ const COPY: Record<UiLanguage, UiCopy> = {
     dashboardSubtitle: 'Touchez des mots dans vos PDF, ecoutez la prononciation, voyez des definitions simples, et construisez votre banque.',
     openReader: 'Ouvrir le lecteur',
     openWordBank: 'Ouvrir la banque',
+    openQuizBuilder: 'Ouvrir le generateur',
     slideReaderTitle: 'Lecteur',
     slideReaderBody: 'Importez un PDF et double-cliquez sur un mot pour une recherche immediate.',
     slideDictionaryTitle: 'Dictionnaire intelligent',
@@ -283,6 +351,26 @@ const COPY: Record<UiLanguage, UiCopy> = {
     tryAgain: 'Reessayer',
     reveal: 'Afficher',
     generalSet: 'Ensemble general',
+    quizBuilderTitle: 'Generateur de quiz IA',
+    quizBuilderSubtitle: 'Definissez langue, niveau, sujet et minuterie avant de generer votre quiz de classe.',
+    generatorOptions: 'Options du generateur',
+    quizLanguage: 'Langue',
+    cefrLevel: 'Niveau CECR',
+    topic: 'Sujet',
+    topicPlaceholder: 'Vocabulaire du cafe, subjonctif, debat climat...',
+    quizType: 'Type de quiz',
+    numberOfQuestions: 'Nombre de questions',
+    optionsPerQuestion: 'Options par question',
+    timePerQuestion: 'Temps par question',
+    titleOptional: 'Titre (optionnel)',
+    titlePlaceholder: 'Laissez vide pour generation auto',
+    generateQuiz: 'Generer le quiz ->',
+    vocabulary: 'Vocabulaire',
+    grammar: 'Grammaire',
+    comprehension: 'Comprehension',
+    translation: 'Traduction',
+    fillInTheBlank: 'Texte a trou',
+    errorDetection: 'Detection d erreur',
   },
 }
 
@@ -312,5 +400,6 @@ export function viewLabel(view: AppView, lang: 'en' | 'de' | 'fr' | 'auto') {
   const copy = getUiCopy(lang)
   if (view === 'dashboard') return copy.dashboard
   if (view === 'reader') return copy.reader
-  return copy.wordBank
+  if (view === 'wordbank') return copy.wordBank
+  return copy.quizBuilder
 }

@@ -6,6 +6,7 @@ import { TopMenu } from './components/TopMenu'
 import { DashboardView } from './components/DashboardView'
 import { AuthGate } from './components/AuthGate'
 import { WordBankView } from './components/WordBankView'
+import { QuizBuilderView } from './components/QuizBuilderView'
 import { useAppStore } from './store/useAppStore'
 
 export default function App() {
@@ -46,6 +47,8 @@ export default function App() {
       )}
 
       {activeView === 'wordbank' && <WordBankView />}
+
+      {activeView === 'quizbuilder' && <QuizBuilderView />}
     </div>
   )
 }

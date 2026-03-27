@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type {
   AppView,
+  QuizBuilderConfig,
   DictionaryEntry,
   ReaderSettings,
   SavedWord,
@@ -16,6 +17,7 @@ interface AppStore {
   savedWords: SavedWord[]
   isLoading: boolean
   settings: ReaderSettings
+  quizBuilderConfig: QuizBuilderConfig
   activeView: AppView
   currentUser: UserProfile | null
   setPdfFile: (file: File | null) => void
@@ -26,6 +28,7 @@ interface AppStore {
   removeSavedWord: (word: string, language: 'en' | 'de' | 'fr') => void
   setIsLoading: (loading: boolean) => void
   updateSettings: (settings: Partial<ReaderSettings>) => void
+  updateQuizBuilderConfig: (settings: Partial<QuizBuilderConfig>) => void
   setActiveView: (view: AppView) => void
   signInLocally: (username: string) => void
   signOutLocally: () => void
@@ -47,6 +50,17 @@ const defaultSettings: ReaderSettings = {
   pdfTextOpacity: 1,
 }
 
+const defaultQuizBuilderConfig: QuizBuilderConfig = {
+  language: 'German',
+  languageLevel: 'A2',
+  topic: '',
+  quizType: 'vocabulary',
+  questionCount: 10,
+  optionsPerQuestion: 4,
+  timePerQuestion: 20,
+  title: '',
+}
+
 export const useAppStore = create<AppStore>()(
   persist(
     (set) => ({
@@ -57,6 +71,7 @@ export const useAppStore = create<AppStore>()(
       savedWords: [],
       isLoading: false,
       settings: defaultSettings,
+      quizBuilderConfig: defaultQuizBuilderConfig,
       activeView: 'dashboard',
       currentUser: null,
       setPdfFile: (file) => set({ pdfFile: file }),
@@ -115,6 +130,13 @@ export const useAppStore = create<AppStore>()(
       setIsLoading: (loading) => set({ isLoading: loading }),
       updateSettings: (partial) =>
         set((state) => ({ settings: { ...state.settings, ...partial } })),
+      updateQuizBuilderConfig: (partial) =>
+        set((state) => ({
+          quizBuilderConfig: {
+            ...state.quizBuilderConfig,
+            ...partial,
+          },
+        })),
       setActiveView: (view) => set({ activeView: view }),
       signInLocally: (username) =>
         set((state) => ({
@@ -141,6 +163,7 @@ export const useAppStore = create<AppStore>()(
         selectedWord: state.selectedWord,
         dictionaryEntry: state.dictionaryEntry,
         savedWords: state.savedWords,
+        quizBuilderConfig: state.quizBuilderConfig,
         currentUser: state.currentUser,
         activeView: state.activeView,
       }),

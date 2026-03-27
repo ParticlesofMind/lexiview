@@ -49,7 +49,28 @@ export interface SavedWord {
   entry: DictionaryEntry
 }
 
-export type AppView = 'dashboard' | 'reader' | 'wordbank'
+export type AppView = 'dashboard' | 'reader' | 'wordbank' | 'quizbuilder'
+
+export type QuizLanguage = 'German' | 'English' | 'French' | 'Italian' | 'Spanish'
+export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2'
+export type QuizType =
+  | 'vocabulary'
+  | 'grammar'
+  | 'comprehension'
+  | 'translation'
+  | 'fill_in_the_blank'
+  | 'error_detection'
+
+export interface QuizBuilderConfig {
+  language: QuizLanguage
+  languageLevel: CefrLevel
+  topic: string
+  quizType: QuizType
+  questionCount: number
+  optionsPerQuestion: 2 | 3 | 4
+  timePerQuestion: number
+  title: string
+}
 
 export interface UserProfile {
   username: string
