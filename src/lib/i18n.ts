@@ -127,6 +127,13 @@ type UiCopy = {
   testingOllama: string
   ollamaReachable: string
   ollamaModelMissing: string
+  ollamaSettings: string
+  ollamaBaseUrl: string
+  ollamaModel: string
+  ollamaApiKey: string
+  saveOllamaSettings: string
+  ollamaSettingsSaved: string
+  hostedOllamaHint: string
 }
 
 const COPY: Record<UiLanguage, UiCopy> = {
@@ -255,6 +262,13 @@ const COPY: Record<UiLanguage, UiCopy> = {
     testingOllama: 'Testing Ollama...',
     ollamaReachable: 'Ollama is reachable.',
     ollamaModelMissing: 'Ollama is reachable, but the configured model is not installed.',
+    ollamaSettings: 'Ollama settings',
+    ollamaBaseUrl: 'Ollama base URL',
+    ollamaModel: 'Ollama model',
+    ollamaApiKey: 'Ollama API key',
+    saveOllamaSettings: 'Save Ollama Settings',
+    ollamaSettingsSaved: 'Ollama settings saved in this browser.',
+    hostedOllamaHint: 'For GitHub Pages or any hosted frontend, set the actual remote Ollama URL here. Build-time localhost will not be correct for other users.',
   },
   de: {
     appName: 'LexiView',
@@ -381,6 +395,13 @@ const COPY: Record<UiLanguage, UiCopy> = {
     testingOllama: 'Ollama wird getestet...',
     ollamaReachable: 'Ollama ist erreichbar.',
     ollamaModelMissing: 'Ollama ist erreichbar, aber das konfigurierte Modell ist nicht installiert.',
+    ollamaSettings: 'Ollama Einstellungen',
+    ollamaBaseUrl: 'Ollama Basis URL',
+    ollamaModel: 'Ollama Modell',
+    ollamaApiKey: 'Ollama API Schlussel',
+    saveOllamaSettings: 'Ollama Einstellungen speichern',
+    ollamaSettingsSaved: 'Ollama Einstellungen wurden in diesem Browser gespeichert.',
+    hostedOllamaHint: 'Fur GitHub Pages oder andere gehostete Frontends trage hier die echte entfernte Ollama URL ein. Das Build-zeit localhost ist fur andere Nutzer falsch.',
   },
   fr: {
     appName: 'LexiView',
@@ -507,6 +528,13 @@ const COPY: Record<UiLanguage, UiCopy> = {
     testingOllama: 'Test Ollama en cours...',
     ollamaReachable: 'Ollama est joignable.',
     ollamaModelMissing: 'Ollama est joignable, mais le modele configure n est pas installe.',
+    ollamaSettings: 'Parametres Ollama',
+    ollamaBaseUrl: 'URL Ollama',
+    ollamaModel: 'Modele Ollama',
+    ollamaApiKey: 'Cle API Ollama',
+    saveOllamaSettings: 'Enregistrer les parametres Ollama',
+    ollamaSettingsSaved: 'Les parametres Ollama sont enregistres dans ce navigateur.',
+    hostedOllamaHint: 'Pour GitHub Pages ou tout frontend heberge, renseignez ici la vraie URL Ollama distante. Le localhost du build n est pas correct pour les autres utilisateurs.',
   },
 }
 

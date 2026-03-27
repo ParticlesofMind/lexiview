@@ -34,6 +34,23 @@ Notes:
 - If you are using local Ollama, the API key is usually not needed.
 - If you use a hosted Ollama endpoint, any `VITE_` key is exposed to the browser, so this is acceptable for local/dev use but should move server-side before production.
 - If the base URL, model, or auth is wrong, the generator shows a clear error message in the UI.
+- For the GitHub Pages deployment, build-time env values are not enough if you want each browser to target a different Ollama host. Use the in-app Ollama settings panel in Quiz Builder to override the URL/model/key at runtime in that browser.
+
+### CORS for hosted frontend
+
+If the frontend runs from `https://particlesofmind.github.io/lexiview/`, your Ollama host must allow that origin.
+
+Example:
+
+```bash
+OLLAMA_HOST=0.0.0.0:11434
+OLLAMA_ORIGINS=https://particlesofmind.github.io
+ollama serve
+```
+
+If you expose Ollama on a different machine, do not use `http://localhost:11434` in the hosted app unless Ollama is running on the same machine as the browser. Use the actual reachable host URL instead.
+
+If the frontend is `https://` and your Ollama server is plain `http://` on a non-localhost host, some browsers will block it as mixed content. In that case, put Ollama behind HTTPS or a reverse proxy.
 
 ## Expanding the ESLint configuration
 

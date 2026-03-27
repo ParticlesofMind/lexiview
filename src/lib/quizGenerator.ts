@@ -10,6 +10,16 @@ type OllamaGenerateResponse = {
   error?: string
 }
 
+export interface OllamaRuntimeConfig {
+  baseUrl: string
+  model: string
+  apiKey: string
+}
+
+const OLLAMA_BASE_URL_KEY = 'lexiview-ollama-base-url'
+const OLLAMA_MODEL_KEY = 'lexiview-ollama-model'
+const OLLAMA_API_KEY_KEY = 'lexiview-ollama-api-key'
+
 const SYSTEM_PROMPT =
   'You are an expert language teacher and quiz designer. You generate quiz questions for language learners. You will be given a configuration and must return ONLY valid JSON - no preamble, no markdown, no explanation.'
 
@@ -204,18 +214,51 @@ function validateQuizPayload(payload: unknown, config: QuizBuilderConfig): Gener
   }
 }
 
+function getStoredValue(key: string): string | null {
+  if (typeof window === 'undefined') return null
+  return window.localStorage.getItem(key)
+}
+
+function setStoredValue(key: string, value: string) {
+  if (typeof window === 'undefined') return
+
+  if (value.trim()) {
+    window.localStorage.setItem(key, value.trim())
+  } else {
+    window.localStorage.removeItem(key)
+  }
+}
+
 export function getOllamaBaseUrl() {
-  return (import.meta.env.VITE_OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/$/, '')
+  return (getStoredValue(OLLAMA_BASE_URL_KEY) || import.meta.env.VITE_OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/$/, '')
 }
 
 export function getOllamaModel() {
-  return import.meta.env.VITE_OLLAMA_MODEL || 'llama3.1:8b'
+  return getStoredValue(OLLAMA_MODEL_KEY) || import.meta.env.VITE_OLLAMA_MODEL || 'llama3.1:8b'
+}
+
+export function getOllamaApiKey() {
+  return getStoredValue(OLLAMA_API_KEY_KEY) || (import.meta.env.VITE_OLLAMA_API_KEY as string | undefined) || ''
+}
+
+export function getOllamaRuntimeConfig(): OllamaRuntimeConfig {
+  return {
+    baseUrl: getOllamaBaseUrl(),
+    model: getOllamaModel(),
+    apiKey: getOllamaApiKey(),
+  }
+}
+
+export function saveOllamaRuntimeConfig(config: OllamaRuntimeConfig) {
+  setStoredValue(OLLAMA_BASE_URL_KEY, config.baseUrl)
+  setStoredValue(OLLAMA_MODEL_KEY, config.model)
+  setStoredValue(OLLAMA_API_KEY_KEY, config.apiKey)
 }
 
 export async function testOllamaConnection(): Promise<{ baseUrl: string; model: string; modelAvailable: boolean }> {
   const baseUrl = getOllamaBaseUrl()
   const model = getOllamaModel()
-  const apiKey = import.meta.env.VITE_OLLAMA_API_KEY as string | undefined
+  const apiKey = getOllamaApiKey()
 
   const response = await fetch(`${baseUrl}/api/tags`, {
     method: 'GET',
@@ -240,7 +283,7 @@ export async function testOllamaConnection(): Promise<{ baseUrl: string; model: 
 }
 
 async function requestOllama(config: QuizBuilderConfig, extraInstruction?: string): Promise<string> {
-  const apiKey = import.meta.env.VITE_OLLAMA_API_KEY as string | undefined
+  const apiKey = getOllamaApiKey()
   const response = await fetch(`${getOllamaBaseUrl()}/api/generate`, {
     method: 'POST',
     headers: {

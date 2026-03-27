@@ -4,8 +4,10 @@ import { getUiCopy } from '../lib/i18n'
 import {
   generateQuiz,
   getOllamaBaseUrl,
+  getOllamaRuntimeConfig,
   getOllamaModel,
   regenerateQuestion,
+  saveOllamaRuntimeConfig,
   testOllamaConnection,
 } from '../lib/quizGenerator'
 import type { GeneratedQuiz, QuizQuestion, QuizType, SessionParticipant } from '../types/dictionary'
@@ -85,6 +87,7 @@ export function QuizBuilderView() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [connectionMessage, setConnectionMessage] = useState<string | null>(null)
   const [editingQuestion, setEditingQuestion] = useState<DraftQuestion | null>(null)
+  const [ollamaSettings, setOllamaSettings] = useState(getOllamaRuntimeConfig)
 
   const quizTypeLabels: Record<QuizType, string> = {
     vocabulary: copy.vocabulary,
@@ -180,6 +183,12 @@ export function QuizBuilderView() {
     }
   }
 
+  const onSaveOllamaSettings = () => {
+    saveOllamaRuntimeConfig(ollamaSettings)
+    setConnectionMessage(copy.ollamaSettingsSaved)
+    setErrorMessage(null)
+  }
+
   return (
     <section className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_8%_10%,rgba(37,99,235,0.14),transparent_34%),radial-gradient(circle_at_88%_4%,rgba(15,15,15,0.1),transparent_32%),linear-gradient(165deg,#f8f7f1,#ece9de)] dark:bg-[radial-gradient(circle_at_8%_10%,rgba(37,99,235,0.2),transparent_34%),radial-gradient(circle_at_88%_4%,rgba(245,245,240,0.12),transparent_32%),linear-gradient(165deg,#141414,#090909)]">
       <div className="max-w-5xl mx-auto px-5 py-8 sm:py-12">
@@ -195,6 +204,58 @@ export function QuizBuilderView() {
             <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#2563eb] mb-4">
               {copy.generatorOptions}
             </p>
+
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4 border border-[#0f0f0f]/12 dark:border-[#f5f5f0]/12 p-4">
+              <div className="sm:col-span-3">
+                <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#2563eb] mb-2">
+                  {copy.ollamaSettings}
+                </p>
+                <p className="text-xs text-[#0f0f0f]/60 dark:text-[#f5f5f0]/60">
+                  {copy.hostedOllamaHint}
+                </p>
+              </div>
+
+              <label className="flex flex-col gap-1 sm:col-span-2">
+                <span className="text-xs font-mono uppercase tracking-widest opacity-65 dark:text-[#f5f5f0]">{copy.ollamaBaseUrl}</span>
+                <input
+                  value={ollamaSettings.baseUrl}
+                  onChange={(e) => setOllamaSettings((current) => ({ ...current, baseUrl: e.target.value }))}
+                  placeholder="http://192.168.1.100:11434"
+                  className="border border-[#0f0f0f]/30 dark:border-[#f5f5f0]/30 bg-transparent px-2 py-2 text-sm"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-mono uppercase tracking-widest opacity-65 dark:text-[#f5f5f0]">{copy.ollamaModel}</span>
+                <input
+                  value={ollamaSettings.model}
+                  onChange={(e) => setOllamaSettings((current) => ({ ...current, model: e.target.value }))}
+                  placeholder="llama3.1:8b"
+                  className="border border-[#0f0f0f]/30 dark:border-[#f5f5f0]/30 bg-transparent px-2 py-2 text-sm"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1 sm:col-span-3">
+                <span className="text-xs font-mono uppercase tracking-widest opacity-65 dark:text-[#f5f5f0]">{copy.ollamaApiKey}</span>
+                <input
+                  type="password"
+                  value={ollamaSettings.apiKey}
+                  onChange={(e) => setOllamaSettings((current) => ({ ...current, apiKey: e.target.value }))}
+                  placeholder="Optional bearer token"
+                  className="border border-[#0f0f0f]/30 dark:border-[#f5f5f0]/30 bg-transparent px-2 py-2 text-sm"
+                />
+              </label>
+
+              <div className="sm:col-span-3 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={onSaveOllamaSettings}
+                  className="px-4 py-3 border border-[#0f0f0f]/25 dark:border-[#f5f5f0]/25 text-xs font-mono uppercase tracking-widest hover:border-[#2563eb] hover:text-[#2563eb] transition-colors"
+                >
+                  {copy.saveOllamaSettings}
+                </button>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="flex flex-col gap-1">
