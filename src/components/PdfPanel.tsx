@@ -20,6 +20,12 @@ function tokenContainsWord(tokenText: string, word: string | null): boolean {
     .some((part) => part === word)
 }
 
+function isLikelyPdf(file: File): boolean {
+  const normalizedType = file.type.toLowerCase()
+  if (normalizedType === 'application/pdf') return true
+  return file.name.toLowerCase().endsWith('.pdf')
+}
+
 export function PdfPanel() {
   const { pdfFile, setPdfFile, selectedWord, setSelectedWord, settings } = useAppStore()
   const { pages, isProcessing, loadPdf } = usePdfTextLayer()
@@ -43,7 +49,7 @@ export function PdfPanel() {
 
   const handleFile = useCallback(
     async (file: File) => {
-      if (file.type !== 'application/pdf') return
+      if (!isLikelyPdf(file)) return
 
       setPdfFile(file)
       try {
@@ -51,7 +57,13 @@ export function PdfPanel() {
       } catch {
         // Continue without persistence if IndexedDB storage fails.
       }
-      loadPdf(file)
+
+      try {
+        await loadPdf(file)
+      } catch {
+        // Prevent unhandled rejections from surfacing browser-level errors.
+        setPdfFile(null)
+      }
     },
     [setPdfFile, loadPdf]
   )
@@ -81,10 +93,8 @@ export function PdfPanel() {
 
   const handleWordClick = useCallback(
     (tokenText: string) => {
-      setTimeout(() => {
-        const selected = window.getSelection()?.toString().trim()
-        resolveAndLookupWord(selected || tokenText)
-      }, 0)
+      resolveAndLookupWord(tokenText)
+      window.getSelection()?.removeAllRanges()
     },
     [resolveAndLookupWord]
   )
@@ -165,7 +175,7 @@ export function PdfPanel() {
 
   return (
     <div
-      className="flex-1 overflow-y-auto bg-[#f5f5f0] dark:bg-[#0f0f0f] border-r border-[#0f0f0f] dark:border-[#2a2a2a]"
+      className="flex-1 overflow-y-auto border-r border-[#0f0f0f] dark:border-[#2a2a2a] bg-[radial-gradient(circle_at_top,_rgba(15,15,15,0.06),_rgba(245,245,240,0)_38%),linear-gradient(180deg,_#f7f6f1_0%,_#ece9df_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(245,245,240,0.08),_rgba(15,15,15,0)_40%),linear-gradient(180deg,_#111_0%,_#090909_100%)]"
       onMouseUp={handleMouseUp}
     >
       <div className="sticky top-0 z-20 flex justify-end px-3 py-2 bg-[#f5f5f0]/95 dark:bg-[#0f0f0f]/95 border-b border-[#0f0f0f]/10 dark:border-[#f5f5f0]/10 backdrop-blur-sm">
@@ -188,7 +198,7 @@ export function PdfPanel() {
       {pages.map((page, pageIdx) => (
         <div
           key={pageIdx}
-          className="relative mx-auto my-4 bg-white dark:bg-[#111] border border-[#0f0f0f]/20 dark:border-[#f5f5f0]/10"
+          className="relative mx-auto my-6 bg-white dark:bg-[#101010] border border-[#0f0f0f]/15 dark:border-[#f5f5f0]/15 rounded-[2px] shadow-[0_12px_28px_rgba(15,15,15,0.14),0_1px_0_rgba(15,15,15,0.2)] dark:shadow-[0_14px_30px_rgba(0,0,0,0.55),0_1px_0_rgba(255,255,255,0.08)]"
           style={{ width: page.viewport.width * settings.pdfZoom, height: page.viewport.height * settings.pdfZoom }}
         >
           {/* Page number */}
@@ -211,6 +221,9 @@ export function PdfPanel() {
                 cursor: 'pointer',
                 userSelect: 'text',
                 whiteSpace: 'pre',
+                wordSpacing: '0px',
+                fontKerning: 'normal',
+                textRendering: 'optimizeLegibility',
                 color: settings.theme === 'dark' ? '#f5f5f0' : '#0f0f0f',
                 opacity: settings.pdfTextOpacity,
                 letterSpacing: `calc(var(--reader-letter-spacing, 0px) * ${settings.pdfZoom})`,

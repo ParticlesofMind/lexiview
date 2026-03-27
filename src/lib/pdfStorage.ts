@@ -9,6 +9,25 @@ interface PersistedPdf {
   data: ArrayBuffer
 }
 
+function readBlobAsArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
+  if (typeof blob.arrayBuffer === 'function') {
+    return blob.arrayBuffer()
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (reader.result instanceof ArrayBuffer) {
+        resolve(reader.result)
+        return
+      }
+      reject(new TypeError('Failed to read blob as ArrayBuffer'))
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsArrayBuffer(blob)
+  })
+}
+
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION)
@@ -32,7 +51,7 @@ export async function savePersistedPdf(file: File): Promise<void> {
     const payload: PersistedPdf = {
       name: file.name,
       type: file.type,
-      data: await file.arrayBuffer(),
+      data: await readBlobAsArrayBuffer(file),
     }
 
     await new Promise<void>((resolve, reject) => {
