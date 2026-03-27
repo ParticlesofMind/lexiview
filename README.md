@@ -52,6 +52,65 @@ If you expose Ollama on a different machine, do not use `http://localhost:11434`
 
 If the frontend is `https://` and your Ollama server is plain `http://` on a non-localhost host, some browsers will block it as mixed content. In that case, put Ollama behind HTTPS or a reverse proxy.
 
+### HTTPS proxy with Caddy (recommended)
+
+Use this when your frontend is hosted on GitHub Pages and you want a stable HTTPS Ollama endpoint.
+
+1. Point a domain/subdomain (example: `ollama.yourdomain.com`) to your Ollama server.
+2. Install Caddy on that server.
+3. Save this Caddy config:
+
+```caddy
+ollama.yourdomain.com {
+  encode gzip
+
+  # CORS for your hosted frontend
+  @cors_preflight {
+    method OPTIONS
+    path /api/*
+  }
+  header {
+    Access-Control-Allow-Origin "https://particlesofmind.github.io"
+    Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers "Content-Type, Authorization"
+    Access-Control-Max-Age "86400"
+    Vary "Origin"
+  }
+  respond @cors_preflight 204
+
+  reverse_proxy 127.0.0.1:11434
+}
+```
+
+4. Start Ollama locally on the same server:
+
+```bash
+OLLAMA_HOST=127.0.0.1:11434 ollama serve
+```
+
+5. Reload Caddy:
+
+```bash
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+```
+
+6. In Quiz Builder -> Ollama settings, set:
+
+```text
+Base URL: https://ollama.yourdomain.com
+Model: llama3.1:8b
+API key: (optional, if your proxy enforces one)
+```
+
+7. Click `Save Ollama Settings`, then `Test Ollama Connection`.
+
+Quick verification from your laptop:
+
+```bash
+curl https://ollama.yourdomain.com/api/tags
+```
+
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:

@@ -1,0 +1,19 @@
+ollama.yourdomain.com {
+  encode gzip
+
+  # CORS for GitHub Pages frontend
+  @cors_preflight {
+    method OPTIONS
+    path /api/*
+  }
+  header {
+    Access-Control-Allow-Origin "https://particlesofmind.github.io/lexiview/"
+    Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers "Content-Type, Authorization"
+    Access-Control-Max-Age "86400"
+    Vary "Origin"
+  }
+  respond @cors_preflight 204
+
+  reverse_proxy 127.0.0.1:11434
+}
