@@ -28,57 +28,48 @@ export function usePdfTextLayer() {
     setIsProcessing(true)
     setPages([])
 
-    const arrayBuffer = await file.arrayBuffer()
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-    const pageResults: PageData[] = []
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+      const pageResults: PageData[] = []
 
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i)
-      const scale = 1.5
-      const viewport = page.getViewport({ scale })
-      const textContent = await page.getTextContent()
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const scale = 1.5
+        const viewport = page.getViewport({ scale })
+        const textContent = await page.getTextContent()
 
-      const tokens: TextToken[] = []
+        const tokens: TextToken[] = []
 
-      for (const item of textContent.items) {
-        if (!('str' in item) || !item.str.trim()) continue
+        for (const item of textContent.items) {
+          if (!('str' in item) || !item.str) continue
 
-        const tx = pdfjsLib.Util.transform(viewport.transform, item.transform)
-        const x = tx[4]
-        const y = tx[5]
-        const height = Math.abs(item.transform[3]) * scale
-        const width = item.width * scale
+          const tx = pdfjsLib.Util.transform(viewport.transform, item.transform)
+          const x = tx[4]
+          const y = tx[5]
+          const width = Math.max(item.width * scale, 0)
+          const height = Math.max(Math.hypot(tx[2], tx[3]), 0)
 
-        // Split into word tokens
-        const words = item.str.split(/(\s+)/)
-        let currentX = x
-        const charWidth = width / (item.str.length || 1)
-
-        for (const word of words) {
-          if (!word.trim()) {
-            currentX += word.length * charWidth
-            continue
-          }
           tokens.push({
-            text: word,
-            x: currentX,
+            text: item.str,
+            x,
             y: y - height,
-            width: word.length * charWidth,
+            width,
             height,
             pageIndex: i - 1,
           })
-          currentX += word.length * charWidth
         }
+
+        pageResults.push({
+          tokens,
+          viewport: { width: viewport.width, height: viewport.height },
+        })
       }
 
-      pageResults.push({
-        tokens,
-        viewport: { width: viewport.width, height: viewport.height },
-      })
+      setPages(pageResults)
+    } finally {
+      setIsProcessing(false)
     }
-
-    setPages(pageResults)
-    setIsProcessing(false)
   }, [])
 
   return { pages, isProcessing, loadPdf }

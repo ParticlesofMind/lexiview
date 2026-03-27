@@ -34,4 +34,13 @@ export interface ReaderSettings {
   letterSpacing: number
   fontFamily: 'serif' | 'sans' | 'mono'
   theme: 'light' | 'dark'
+  pdfZoom: number
+  pdfTextOpacity: number
+}
+
+export interface SavedWord {
+  word: string
+  language: 'en' | 'de' | 'fr'
+  savedAt: string
+  entry: DictionaryEntry
 }

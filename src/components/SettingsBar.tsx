@@ -23,9 +23,9 @@ export function SettingsBar() {
 
       <div
         className="overflow-hidden transition-all duration-150 ease-in-out"
-        style={{ maxHeight: expanded ? '200px' : '0px' }}
+        style={{ maxHeight: expanded ? '260px' : '0px' }}
       >
-        <div className="px-4 py-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-xs dark:text-[#f5f5f0]">
+        <div className="px-4 py-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-4 text-xs dark:text-[#f5f5f0]">
           {/* Font Size */}
           <label className="flex flex-col gap-1">
             <span className="font-mono uppercase tracking-wide opacity-60">Font size</span>
@@ -113,6 +113,34 @@ export function SettingsBar() {
               {settings.theme === 'light' ? 'Light' : 'Dark'}
             </button>
           </label>
+
+          {/* PDF Zoom */}
+          <label className="flex flex-col gap-1">
+            <span className="font-mono uppercase tracking-wide opacity-60">PDF zoom</span>
+            <input
+              type="range"
+              min={80}
+              max={200}
+              value={Math.round(settings.pdfZoom * 100)}
+              onChange={(e) => updateSettings({ pdfZoom: Number(e.target.value) / 100 })}
+              className="accent-[#2563eb]"
+            />
+            <span className="opacity-60">{Math.round(settings.pdfZoom * 100)}%</span>
+          </label>
+
+          {/* PDF Text Opacity */}
+          <label className="flex flex-col gap-1">
+            <span className="font-mono uppercase tracking-wide opacity-60">Text opacity</span>
+            <input
+              type="range"
+              min={40}
+              max={100}
+              value={Math.round(settings.pdfTextOpacity * 100)}
+              onChange={(e) => updateSettings({ pdfTextOpacity: Number(e.target.value) / 100 })}
+              className="accent-[#2563eb]"
+            />
+            <span className="opacity-60">{Math.round(settings.pdfTextOpacity * 100)}%</span>
+          </label>
         </div>
       </div>
 
@@ -123,6 +151,8 @@ export function SettingsBar() {
           --reader-line-height: ${settings.lineHeight};
           --reader-letter-spacing: ${settings.letterSpacing}px;
           --reader-font-family: ${fontFamilyMap[settings.fontFamily]};
+          --reader-pdf-zoom: ${settings.pdfZoom};
+          --reader-pdf-text-opacity: ${settings.pdfTextOpacity};
         }
       `}</style>
     </div>
